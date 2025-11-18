@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, DateTime, create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -35,7 +36,7 @@ class PromptUpdate(BaseModel):
     name: str | None = None
     template: str | None = None
 
-# --- ROUTES ---
+# --- CRUD ROUTES ---
 @app.post("/prompts")
 def create_prompt(prompt: PromptCreate):
     db = SessionLocal()
@@ -91,3 +92,24 @@ def delete_prompt(prompt_id: int):
 @app.get("/ping")
 async def ping():
     return {"status": "ok"}
+
+
+# --- WEBSOCKET TRANSCRIPTION (SIMULATED STREAMING) ---
+@app.websocket("/transcribe")
+async def transcribe_ws(websocket: WebSocket):
+    await websocket.accept()
+    chunk_index = 0
+
+    try:
+        while True:
+            audio_chunk = await websocket.receive_bytes()
+            chunk_index += 1
+
+            # Future integration: send chunk to whisper.cpp streaming
+            # For now simulate a transcription result
+            text = f"[Chunk {chunk_index}] Transcription simulée"
+
+            await websocket.send_text(text)
+
+    except Exception as e:
+        print("WebSocket closed:", e)
