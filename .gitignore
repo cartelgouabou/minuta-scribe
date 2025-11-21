@@ -1,23 +1,31 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# Virtual environments
 .venv/
 env/
 venv/
 
-# Poetry
-poetry.lock
+# Python
+__pycache__/
+*.pyc
 
-# Node / Frontend
+# Node / React
 node_modules/
 dist/
+
+# MacOS
+.DS_Store
+
+# FastAPI data
+data/*.sqlite3
+
+# Audio buffers
+buffer.raw
+buffer.wav
+
+# Logs
 *.log
 
-# SQLite
-*.sqlite3
+# Whisper models (local)
+whisper.cpp/models/*.bin
 
-# OS
-.DS_Store
-Thumbs.db
+# Docker artifacts
+docker/volumes/
