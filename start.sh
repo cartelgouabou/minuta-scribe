@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Script de démarrage rapide pour Minuta
-# Ce script vérifie les prérequis, installe les dépendances et peut lancer l'application
+# Script de démarrage rapide pour Minuta avec Docker
+# Ce script vérifie Docker, propose l'installation si nécessaire, puis lance l'application
 #
 # Pour rendre ce script exécutable (si nécessaire):
 #   chmod +x start.sh
@@ -39,60 +39,163 @@ error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
-# Vérifier les prérequis
-info "Vérification des prérequis..."
+# Fonction pour détecter le système d'exploitation
+detect_os() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if [ -f /etc/os-release ]; then
+            . /etc/os-release
+            if [[ "$ID" == "ubuntu" ]] || [[ "$ID" == "debian" ]]; then
+                echo "ubuntu"
+            else
+                echo "linux"
+            fi
+        else
+            echo "linux"
+        fi
+    else
+        echo "unknown"
+    fi
+}
 
-# Vérifier Python
-if ! command -v python3 &> /dev/null; then
-    error "Python 3 n'est pas installé."
-    echo "   Installez Python 3.10+ depuis https://www.python.org/downloads/"
-    exit 1
-fi
+# Fonction pour installer Docker sur macOS
+install_docker_macos() {
+    info "Installation de Docker sur macOS..."
+    
+    # Vérifier si Homebrew est installé
+    if ! command -v brew &> /dev/null; then
+        warning "Homebrew n'est pas installé. Installation de Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    fi
+    
+    info "Installation de Docker Desktop via Homebrew..."
+    brew install --cask docker
+    
+    success "Docker Desktop installé !"
+    warning "⚠️  IMPORTANT: Vous devez maintenant :"
+    echo "   1. Ouvrir Docker Desktop depuis le dossier Applications"
+    echo "   2. Attendre que Docker démarre complètement (icône Docker dans la barre de menu)"
+    echo "   3. Relancer ce script avec: ./start.sh"
+    echo ""
+    read -p "Appuyez sur Entrée une fois Docker Desktop démarré..."
+}
 
-PYTHON_VERSION=$(python3 --version | cut -d' ' -f2 | cut -d'.' -f1,2)
-if [ "$(printf '%s\n' "3.10" "$PYTHON_VERSION" | sort -V | head -n1)" != "3.10" ]; then
-    warning "Python $PYTHON_VERSION détecté. Python 3.10+ est recommandé."
-fi
+# Fonction pour installer Docker sur Ubuntu/Debian
+install_docker_ubuntu() {
+    info "Installation de Docker sur Ubuntu/Debian..."
+    
+    # Vérifier si on a les droits sudo
+    if ! sudo -n true 2>/dev/null; then
+        warning "Cette installation nécessite des droits administrateur (sudo)"
+    fi
+    
+    info "Mise à jour des paquets..."
+    sudo apt-get update
+    
+    info "Installation des dépendances..."
+    sudo apt-get install -y ca-certificates curl gnupg lsb-release
+    
+    info "Ajout de la clé GPG officielle de Docker..."
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    
+    info "Ajout du dépôt Docker..."
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    
+    info "Installation de Docker Engine et Docker Compose..."
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    
+    success "Docker installé !"
+    
+    # Ajouter l'utilisateur au groupe docker pour éviter d'utiliser sudo
+    info "Ajout de votre utilisateur au groupe docker..."
+    sudo usermod -aG docker $USER
+    warning "⚠️  Vous devez vous déconnecter et vous reconnecter (ou redémarrer) pour que les changements prennent effet."
+    echo ""
+    read -p "Voulez-vous continuer maintenant ? (vous devrez peut-être utiliser 'sudo docker' pour cette session) (y/N) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        info "Relancez ce script après vous être reconnecté."
+        exit 0
+    fi
+}
 
-# Vérifier Poetry
-if ! command -v poetry &> /dev/null; then
-    error "Poetry n'est pas installé."
-    echo "   Installez-le avec: curl -sSL https://install.python-poetry.org | python3 -"
-    echo "   Ou avec pip: pip install poetry"
-    exit 1
-fi
-success "Poetry est installé ($(poetry --version))"
+# Vérifier Docker
+info "Vérification de Docker..."
 
-# Vérifier Node.js
-if ! command -v node &> /dev/null; then
-    error "Node.js n'est pas installé."
-    echo "   Installez Node.js 18+ depuis https://nodejs.org/"
-    exit 1
-fi
-
-NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
-if [ "$NODE_VERSION" -lt 18 ]; then
-    warning "Node.js v$(node --version) détecté. Node.js 18+ est recommandé."
+if ! command -v docker &> /dev/null; then
+    warning "Docker n'est pas installé."
+    echo ""
+    OS=$(detect_os)
+    
+    case $OS in
+        macos)
+            echo "Système détecté: macOS"
+            echo ""
+            read -p "Voulez-vous installer Docker Desktop maintenant ? (y/N) " -n 1 -r
+            echo ""
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                install_docker_macos
+                # Après installation, vérifier à nouveau
+                if ! command -v docker &> /dev/null; then
+                    error "Docker n'est toujours pas disponible. Assurez-vous que Docker Desktop est démarré."
+                    exit 1
+                fi
+            else
+                error "Docker est requis pour lancer l'application."
+                echo "   Installez Docker manuellement depuis: https://www.docker.com/products/docker-desktop"
+                exit 1
+            fi
+            ;;
+        ubuntu)
+            echo "Système détecté: Ubuntu/Debian"
+            echo ""
+            read -p "Voulez-vous installer Docker maintenant ? (y/N) " -n 1 -r
+            echo ""
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                install_docker_ubuntu
+            else
+                error "Docker est requis pour lancer l'application."
+                echo "   Installez Docker manuellement: https://docs.docker.com/engine/install/ubuntu/"
+                exit 1
+            fi
+            ;;
+        *)
+            error "Système d'exploitation non supporté pour l'installation automatique."
+            echo "   Installez Docker manuellement depuis: https://www.docker.com/get-started"
+            exit 1
+            ;;
+    esac
 else
-    success "Node.js est installé ($(node --version))"
+    success "Docker est installé ($(docker --version | cut -d' ' -f3 | cut -d',' -f1))"
 fi
 
-# Vérifier npm
-if ! command -v npm &> /dev/null; then
-    error "npm n'est pas installé."
+# Vérifier que Docker fonctionne
+info "Vérification que Docker fonctionne..."
+if ! docker info &> /dev/null; then
+    error "Docker est installé mais ne fonctionne pas."
+    echo "   Sur macOS: Assurez-vous que Docker Desktop est démarré"
+    echo "   Sur Linux: Vous devrez peut-être utiliser 'sudo docker' ou vous reconnecter après avoir été ajouté au groupe docker"
     exit 1
 fi
-success "npm est installé ($(npm --version))"
+success "Docker fonctionne correctement"
 
-# Vérifier ffmpeg
-if ! command -v ffmpeg &> /dev/null; then
-    warning "ffmpeg n'est pas installé. La transcription ne fonctionnera pas."
-    echo "   Installez-le avec:"
-    echo "   - macOS: brew install ffmpeg"
-    echo "   - Ubuntu/Debian: sudo apt-get install ffmpeg"
-    echo "   - Windows: Téléchargez depuis https://ffmpeg.org/download.html"
+# Vérifier Docker Compose
+info "Vérification de Docker Compose..."
+if docker compose version &> /dev/null; then
+    success "Docker Compose est disponible ($(docker compose version | head -n1 | cut -d' ' -f4))"
+    DOCKER_COMPOSE_CMD="docker compose"
+elif command -v docker-compose &> /dev/null; then
+    success "Docker Compose est disponible ($(docker-compose --version | cut -d' ' -f4 | cut -d',' -f1))"
+    DOCKER_COMPOSE_CMD="docker-compose"
 else
-    success "ffmpeg est installé ($(ffmpeg -version | head -n1 | cut -d' ' -f3))"
+    error "Docker Compose n'est pas disponible."
+    echo "   Installez Docker Compose ou utilisez la version intégrée à Docker (docker compose)"
+    exit 1
 fi
 
 echo ""
@@ -113,6 +216,7 @@ if [ ! -f "backend/.env" ]; then
         echo ""
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             info "Ouvrez backend/.env dans un éditeur et ajoutez votre GROQ_API_KEY"
+            echo "   Puis relancez ce script avec: ./start.sh"
             exit 0
         fi
     else
@@ -127,6 +231,14 @@ else
     if ! grep -q "GROQ_API_KEY=.*[^your-groq-api-key-here]" backend/.env 2>/dev/null; then
         if grep -q "GROQ_API_KEY=your-groq-api-key-here" backend/.env 2>/dev/null; then
             warning "GROQ_API_KEY n'est pas configuré dans backend/.env"
+            echo "   Éditez backend/.env et remplacez 'your-groq-api-key-here' par votre vraie clé API"
+            echo "   Obtenez votre clé sur: https://console.groq.com/"
+            echo ""
+            read -p "Voulez-vous continuer quand même? (y/N) " -n 1 -r
+            echo ""
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 0
+            fi
         fi
     else
         success "GROQ_API_KEY est configuré"
@@ -134,102 +246,42 @@ else
 fi
 
 echo ""
-info "Installation des dépendances..."
-echo ""
-
-# Backend
-info "Installation des dépendances backend (Poetry)..."
-cd backend
-if poetry install; then
-    success "Dépendances backend installées"
-else
-    error "Échec de l'installation des dépendances backend"
-    exit 1
-fi
-cd ..
-
-# Frontend
-info "Installation des dépendances frontend (npm)..."
-cd frontend
-if npm install; then
-    success "Dépendances frontend installées"
-else
-    error "Échec de l'installation des dépendances frontend"
-    exit 1
-fi
-cd ..
-
-echo ""
-success "Toutes les dépendances sont installées!"
+success "Tout est prêt !"
 echo ""
 
 # Demander si l'utilisateur veut lancer l'application
-echo "======================================"
-echo "Options de démarrage:"
+read -p "Voulez-vous lancer l'application maintenant ? (Y/n) " -n 1 -r
 echo ""
-echo "1. Lancer l'application en mode développement (2 terminaux)"
-echo "2. Utiliser Docker (recommandé pour production)"
-echo "3. Afficher les instructions seulement"
-echo ""
-read -p "Choisissez une option (1-3) [3]: " choice
-choice=${choice:-3}
-
-case $choice in
-    1)
-        echo ""
-        info "Pour lancer l'application, ouvrez 2 terminaux:"
-        echo ""
-        echo "Terminal 1 (Backend):"
-        echo "  cd backend"
-        echo "  poetry run uvicorn app.main:app --reload --port 8000"
-        echo ""
-        echo "Terminal 2 (Frontend):"
-        echo "  cd frontend"
-        echo "  npm run dev"
-        echo ""
-        echo "Puis ouvrez http://localhost:5173 dans votre navigateur"
-        echo ""
-        read -p "Voulez-vous lancer le backend maintenant? (y/N) " -n 1 -r
-        echo ""
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            info "Lancement du backend..."
-            cd backend
-            poetry run uvicorn app.main:app --reload --port 8000
-        fi
-        ;;
-    2)
-        echo ""
-        info "Pour utiliser Docker:"
-        echo "  cd docker"
-        echo "  echo 'GROQ_API_KEY=your-key-here' > .env"
-        echo "  docker-compose up --build"
-        echo ""
-        echo "Puis ouvrez http://localhost dans votre navigateur"
-        ;;
-    3)
-        echo ""
-        info "Instructions de démarrage:"
-        echo ""
-        echo "Mode développement (2 terminaux):"
-        echo "  Terminal 1: cd backend && poetry run uvicorn app.main:app --reload --port 8000"
-        echo "  Terminal 2: cd frontend && npm run dev"
-        echo "  Navigateur: http://localhost:5173"
-        echo ""
-        echo "Mode Docker:"
-        echo "  cd docker"
-        echo "  echo 'GROQ_API_KEY=your-key-here' > .env"
-        echo "  docker-compose up --build"
-        echo "  Navigateur: http://localhost"
-        echo ""
-        echo "Documentation:"
-        echo "  - Utilisateur: README.md"
-        echo "  - Développeur: README_TECH.md"
-        ;;
-    *)
-        error "Option invalide"
-        exit 1
-        ;;
-esac
+if [[ $REPLY =~ ^[Nn]$ ]]; then
+    info "Pour lancer l'application plus tard, exécutez:"
+    echo "   cd docker"
+    echo "   $DOCKER_COMPOSE_CMD up --build"
+    echo ""
+    echo "Ou relancez ce script: ./start.sh"
+    exit 0
+fi
 
 echo ""
-success "Script terminé!"
+info "Lancement de l'application avec Docker Compose..."
+echo ""
+
+# Aller dans le dossier docker et lancer docker compose
+cd docker
+
+# Construire et lancer les conteneurs
+info "Construction et démarrage des conteneurs..."
+echo "   Cela peut prendre quelques minutes la première fois..."
+echo ""
+
+if $DOCKER_COMPOSE_CMD up --build; then
+    success "Application lancée !"
+    echo ""
+    info "L'application est accessible sur: http://localhost"
+    echo ""
+    info "Pour arrêter l'application, appuyez sur Ctrl+C"
+    echo "Pour lancer en arrière-plan: cd docker && $DOCKER_COMPOSE_CMD up -d --build"
+else
+    error "Erreur lors du lancement de l'application"
+    echo "   Vérifiez les messages d'erreur ci-dessus"
+    exit 1
+fi

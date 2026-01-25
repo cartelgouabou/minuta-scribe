@@ -8,21 +8,17 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Installer Poetry
-RUN pip install --upgrade pip && \
-    pip install poetry
+# Mettre à jour pip
+RUN pip install --upgrade pip
 
 # Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers de configuration Poetry
-COPY backend/pyproject.toml backend/poetry.lock* ./
+# Copier le fichier requirements.txt
+COPY backend/requirements.txt ./
 
-# Configurer Poetry pour ne pas créer d'environnement virtuel
-RUN poetry config virtualenvs.create false
-
-# Installer les dépendances avec Poetry
-RUN poetry install --no-dev
+# Installer les dépendances Python
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copier le code de l'application
 COPY backend/ ./backend/
@@ -30,12 +26,14 @@ COPY backend/ ./backend/
 # Définir le répertoire de travail pour l'application
 WORKDIR /app/backend
 
-# Créer le répertoire pour la base de données
-RUN mkdir -p /app/backend/data
+# Créer le répertoire pour la base de données (sera monté comme volume)
+RUN mkdir -p /app/backend/data && \
+    chmod 777 /app/backend/data
 
 # Variables d'environnement
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV DATABASE_URL=sqlite:///./data/minuta.db
 
 # Exposer le port
 EXPOSE 8000
@@ -45,4 +43,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:8000/ || exit 1
 
 # Commande pour lancer l'application
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

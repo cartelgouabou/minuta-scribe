@@ -32,7 +32,12 @@ function AudioRecorder({
       })
       mediaRecorderRef.current = mediaRecorder
 
-      const ws = new WebSocket('ws://localhost:8000/ws/transcribe')
+      // Utiliser une URL relative pour fonctionner avec le proxy Nginx en Docker
+      // En développement: ws://localhost:5173/ws/transcribe (proxied par Vite)
+      // En production Docker: ws://localhost/ws/transcribe (proxied par Nginx)
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsHost = window.location.host
+      const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/transcribe`)
       websocketRef.current = ws
 
       ws.onopen = () => {

@@ -1,6 +1,9 @@
 import { Prompt, GenerateSummaryRequest, GenerateSummaryResponse } from '../types'
 
-const API_BASE_URL = 'http://localhost:8000/api'
+// Utiliser une URL relative pour fonctionner avec le proxy Nginx en Docker
+// En développement local, Vite proxy redirige /api vers localhost:8000
+// En production Docker, Nginx proxy redirige /api vers backend:8000
+const API_BASE_URL = '/api'
 
 export async function getPrompts(): Promise<Prompt[]> {
   const response = await fetch(`${API_BASE_URL}/prompts`)

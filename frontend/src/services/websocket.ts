@@ -4,7 +4,10 @@ export function createTranscriptionWebSocket(
   onMessage: (message: TranscriptionMessage) => void,
   onError: (error: Error) => void
 ): WebSocket {
-  const ws = new WebSocket('ws://localhost:8000/ws/transcribe')
+  // Utiliser une URL relative pour fonctionner avec le proxy Nginx en Docker
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsHost = window.location.host
+  const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/transcribe`)
 
   ws.onopen = () => {
     console.log('WebSocket connected')
