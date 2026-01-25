@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react'
 
 interface RecordingStatsProps {
   startTime: number
-  transcription: string
 }
 
-function RecordingStats({ startTime, transcription }: RecordingStatsProps) {
+function RecordingStats({ startTime }: RecordingStatsProps) {
   const [elapsedTime, setElapsedTime] = useState<number>(0)
 
   useEffect(() => {
@@ -22,17 +21,11 @@ function RecordingStats({ startTime, transcription }: RecordingStatsProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const wordCount = transcription.trim() ? transcription.trim().split(/\s+/).length : 0
-
   return (
     <div className="recording-stats">
       <div className="stat-item">
         <span className="stat-label">Durée :</span>
         <span className="stat-value">{formatTime(elapsedTime)}</span>
-      </div>
-      <div className="stat-item">
-        <span className="stat-label">Mots transcrits :</span>
-        <span className="stat-value">{wordCount}</span>
       </div>
     </div>
   )

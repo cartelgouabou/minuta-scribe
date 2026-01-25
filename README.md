@@ -119,7 +119,8 @@ Tout fonctionne **localement** sur votre ordinateur (sauf la génération du com
 
 ### 2. Éditer la transcription
 
-1. La transcription apparaît automatiquement
+1. La transcription apparaît automatiquement après l'arrêt de l'enregistrement
+   > 💡 **Note** : Lors du premier lancement de l'application, la transcription peut prendre 30 secondes à quelques minutes car le modèle Whisper doit être chargé. Les transcriptions suivantes seront beaucoup plus rapides.
 2. Vous pouvez modifier le texte directement dans la zone de texte
 3. Corrigez les erreurs si nécessaire
 
@@ -174,7 +175,9 @@ Pour toute question ou problème, consultez le [README technique](README_TECH.md
 
 - **Confidentialité** : La transcription se fait localement sur votre ordinateur. Seule la génération du compte rendu utilise une API cloud (Groq).
 - **Navigateurs recommandés** : Chrome ou Edge pour la meilleure expérience
-- **Performance** : La première transcription peut être plus lente (téléchargement du modèle Whisper)
+- **Performance** : 
+  - ⏱️ **Premier lancement** : Lors du premier lancement de l'application, la première transcription peut prendre un peu de temps (30 secondes à quelques minutes) car le modèle Whisper doit être chargé en mémoire. C'est normal, soyez patient !
+  - ⚡ **Lancements suivants** : Une fois le modèle chargé, les transcriptions suivantes sont beaucoup plus rapides car le modèle reste en mémoire.
 - **Stockage** : Les transcriptions ne sont pas sauvegardées automatiquement. Exportez-les si vous voulez les conserver.
 
 ## 🎉 C'est tout !

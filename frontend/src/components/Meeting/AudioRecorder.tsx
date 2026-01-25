@@ -7,6 +7,7 @@ interface AudioRecorderProps {
   language: string
   onRecordingStart: () => void
   onRecordingStop: () => void
+  onStreamReady?: (stream: MediaStream | null) => void
 }
 
 function AudioRecorder({
@@ -16,16 +17,21 @@ function AudioRecorder({
   language,
   onRecordingStart,
   onRecordingStop,
+  onStreamReady,
 }: AudioRecorderProps) {
   const [error, setError] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const websocketRef = useRef<WebSocket | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const accumulatedTranscriptionRef = useRef<string>('')
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
+      if (onStreamReady) {
+        onStreamReady(stream)
+      }
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus',
@@ -46,6 +52,8 @@ function AudioRecorder({
         mediaRecorder.start(100) // Envoyer des chunks toutes les 100ms
         setIsRecording(true)
         setError(null)
+        accumulatedTranscriptionRef.current = '' // Réinitialiser la transcription accumulée
+        onTranscriptionUpdate('') // Réinitialiser la transcription dans l'UI
         onRecordingStart()
       }
 
@@ -54,10 +62,30 @@ function AudioRecorder({
           const data = JSON.parse(event.data)
           console.log('Message WebSocket reçu:', data)
           if (data.type === 'partial') {
-            onTranscriptionUpdate(data.text)
+            // Accumuler les transcriptions partielles
+            const newText = data.text.trim()
+            console.log('Transcription partielle reçue:', newText)
+            if (newText) {
+              const current = accumulatedTranscriptionRef.current.trim()
+              
+              // Si le nouveau texte n'est pas déjà dans la transcription accumulée, l'ajouter
+              if (!current || !current.includes(newText)) {
+                // Ajouter un espace si nécessaire
+                if (current && !current.endsWith(' ') && !current.endsWith('.') && !current.endsWith('!') && !current.endsWith('?')) {
+                  accumulatedTranscriptionRef.current += ' '
+                }
+                accumulatedTranscriptionRef.current += newText
+                console.log('Transcription accumulée mise à jour:', accumulatedTranscriptionRef.current)
+              }
+              
+              // Toujours mettre à jour la transcription en temps réel
+              onTranscriptionUpdate(accumulatedTranscriptionRef.current)
+            }
           } else if (data.type === 'final') {
             console.log('Transcription finale reçue:', data.text)
+            // La transcription finale remplace tout
             onTranscriptionUpdate(data.text)
+            accumulatedTranscriptionRef.current = data.text
             onRecordingStop()
             // Fermer le WebSocket après avoir reçu la transcription finale
             if (ws.readyState === WebSocket.OPEN) {
@@ -105,6 +133,9 @@ function AudioRecorder({
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop())
+    }
+    if (onStreamReady) {
+      onStreamReady(null)
     }
     setIsRecording(false)
     onRecordingStop()

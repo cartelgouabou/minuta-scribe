@@ -57,7 +57,6 @@ async def websocket_transcribe(websocket: WebSocket):
     
     audio_chunks = []
     is_recording = True
-    last_partial_time = 0
     language = "fr"  # Par défaut français
     import time
 
@@ -88,23 +87,13 @@ async def websocket_transcribe(websocket: WebSocket):
                 audio_chunks.append(chunk_bytes)
                 print(f"Chunk audio reçu: {len(chunk_bytes)} bytes (total: {len(audio_chunks)} chunks)")
                 
-                # Transcription partielle toutes les 15 secondes (environ 15 chunks à 100ms)
-                current_time = time.time()
-                if current_time - last_partial_time >= 15.0 and len(audio_chunks) >= 15:
-                    try:
-                        # Transcrire les 15 derniers chunks (environ 1.5 secondes d'audio)
-                        chunks_to_transcribe = audio_chunks[-15:]
-                        partial_text = whisper_service.transcribe_streaming(chunks_to_transcribe, language=language)
-                        if partial_text.strip():
-                            await websocket.send_json({
-                                "type": "partial",
-                                "text": partial_text
-                            })
-                            print(f"Transcription partielle envoyée: '{partial_text[:50]}...'")
-                        last_partial_time = current_time
-                    except Exception as e:
-                        print(f"Erreur transcription partielle: {e}")
-                        # Ne pas bloquer si la transcription partielle échoue
+                # Transcription partielle désactivée car les chunks partiels ne forment pas toujours
+                # un fichier webm valide, ce qui cause des erreurs ffmpeg.
+                # La transcription sera affichée à la fin de l'enregistrement.
+                # Si vous souhaitez réactiver les transcriptions partielles, il faudrait
+                # utiliser une approche différente (par exemple, accumuler les chunks dans
+                # un buffer et créer un fichier webm valide avec un header complet).
+                pass
 
         # Transcription finale - combiner tous les chunks en un seul fichier
         if audio_chunks:

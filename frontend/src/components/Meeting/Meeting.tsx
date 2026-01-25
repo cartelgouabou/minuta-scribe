@@ -4,6 +4,7 @@ import TranscriptionView from './TranscriptionView'
 import SummaryGenerator from './SummaryGenerator'
 import LanguageSelector from './LanguageSelector'
 import RecordingStats from './RecordingStats'
+import Waveform from './Waveform'
 import './Meeting.css'
 
 function Meeting() {
@@ -11,6 +12,7 @@ function Meeting() {
   const [isRecording, setIsRecording] = useState<boolean>(false)
   const [language, setLanguage] = useState<string>('fr')
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null)
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null)
 
   return (
     <div className="meeting">
@@ -24,11 +26,13 @@ function Meeting() {
           language={language}
           onRecordingStart={() => setRecordingStartTime(Date.now())}
           onRecordingStop={() => setRecordingStartTime(null)}
+          onStreamReady={setAudioStream}
         />
       </div>
       {isRecording && recordingStartTime && (
-        <RecordingStats startTime={recordingStartTime} transcription={transcription} />
+        <RecordingStats startTime={recordingStartTime} />
       )}
+      <Waveform stream={audioStream} isRecording={isRecording} />
       <TranscriptionView
         transcription={transcription}
         setTranscription={setTranscription}
