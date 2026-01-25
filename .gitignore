@@ -1,31 +1,67 @@
-# Virtual environments
-.venv/
-env/
-venv/
-
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+env/
+ENV/
+.venv
 
-# Node / React
+# Poetry
+# poetry.lock devrait être versionné pour garantir la reproductibilité
+
+# Node
 node_modules/
 dist/
+dist-ssr/
+*.local
 
-# MacOS
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
 
-# FastAPI data
-data/*.sqlite3
-
-# Audio buffers
-buffer.raw
-buffer.wav
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # Logs
 *.log
+logs/
 
-# Whisper models (local)
-whisper.cpp/models/*.bin
+# Frontend build
+frontend/dist/
+frontend/build/
 
-# Docker artifacts
-docker/volumes/
+# Backend
+backend/.env
+backend/*.db

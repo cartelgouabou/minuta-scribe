@@ -1,16 +1,46 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  
+  /* Variables CSS pour le mode dark (par défaut) */
+  --bg-primary: #242424;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --border-color: #444;
+  --input-bg: #1a1a1a;
+  --input-border: #444;
+  --summary-bg: #2a2a2a;
+  --summary-text: rgba(255, 255, 255, 0.9);
+
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mode light via data-theme */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #fafafa;
+  --text-primary: #213547;
+  --text-secondary: #4a4a4a;
+  --border-color: #ddd;
+  --input-bg: #ffffff;
+  --input-border: #ccc;
+  --summary-bg: #ffffff;
+  --summary-text: #213547;
+  
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 }
 
 a {
@@ -54,15 +84,53 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* Mode dark via data-theme */
+[data-theme="dark"] {
+  --bg-primary: #242424;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --border-color: #444;
+  --input-bg: #1a1a1a;
+  --input-border: #444;
+  --summary-bg: #2a2a2a;
+  --summary-text: rgba(255, 255, 255, 0.9);
+  
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+}
+
+/* Fallback pour les navigateurs sans support data-theme */
 @media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+  :root:not([data-theme]) {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --bg-tertiary: #fafafa;
+    --text-primary: #213547;
+    --text-secondary: #4a4a4a;
+    --border-color: #ddd;
+    --input-bg: #ffffff;
+    --input-border: #ccc;
+    --summary-bg: #ffffff;
+    --summary-text: #213547;
+    
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+}
+
+/* Styles globaux supplémentaires */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
 }

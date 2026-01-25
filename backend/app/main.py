@@ -1,216 +1,162 @@
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+import json
 import os
-from backend.app.audio_buffer import AudioBuffer
-from backend.app.whisper_worker import WhisperWorker
-from fastapi import FastAPI, HTTPException, WebSocket
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, DateTime, create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from datetime import datetime
-from backend.app.ollama_client import DEFAULT_MODEL
+from dotenv import load_dotenv
 
-app = FastAPI()
+from app.db.database import init_db
+from app.db.seed import seed_prompts
+from app.routes import prompts, summary
+from app.services.whisper_service import WhisperService
 
-# --- DATABASE SETUP ---
-DATABASE_URL = "sqlite:///./data/db.sqlite3"
+# Charger les variables d'environnement
+load_dotenv()
 
-engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
+# Initialiser la base de données
+init_db()
+seed_prompts()
+
+app = FastAPI(title="Minuta API", version="0.1.0")
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
-# --- MODEL ---
-class Prompt(Base):
-    __tablename__ = "prompts"
+# Inclure les routes
+app.include_router(prompts.router)
+app.include_router(summary.router)
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    template = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-Base.metadata.create_all(bind=engine)
-
-# --- SCHEMAS ---
-class PromptCreate(BaseModel):
-    name: str
-    template: str
-
-class PromptUpdate(BaseModel):
-    name: str | None = None
-    template: str | None = None
-
-# --- CRUD ROUTES ---
-@app.post("/prompts")
-def create_prompt(prompt: PromptCreate):
-    db = SessionLocal()
-    db_prompt = Prompt(
-        name=prompt.name,
-        template=prompt.template
-    )
-    db.add(db_prompt)
-    db.commit()
-    db.refresh(db_prompt)
-    return db_prompt
-
-@app.get("/prompts")
-def get_prompts():
-    db = SessionLocal()
-    return db.query(Prompt).all()
-
-@app.get("/prompts/{prompt_id}")
-def get_prompt(prompt_id: int):
-    db = SessionLocal()
-    prompt = db.query(Prompt).filter(Prompt.id == prompt_id).first()
-    if not prompt:
-        raise HTTPException(status_code=404, detail="Prompt not found")
-    return prompt
-
-@app.put("/prompts/{prompt_id}")
-def update_prompt(prompt_id: int, data: PromptUpdate):
-    db = SessionLocal()
-    prompt = db.query(Prompt).filter(Prompt.id == prompt_id).first()
-    if not prompt:
-        raise HTTPException(status_code=404, detail="Prompt not found")
-
-    if data.name is not None:
-        prompt.name = data.name
-    if data.template is not None:
-        prompt.template = data.template
-
-    db.commit()
-    db.refresh(prompt)
-    return prompt
-
-@app.delete("/prompts/{prompt_id}")
-def delete_prompt(prompt_id: int):
-    db = SessionLocal()
-    prompt = db.query(Prompt).filter(Prompt.id == prompt_id).first()
-    if not prompt:
-        raise HTTPException(status_code=404, detail="Prompt not found")
-
-    db.delete(prompt)
-    db.commit()
-    return {"deleted": True}
-
-@app.get("/ping")
-async def ping():
-    return {"status": "ok"}
+# Service Whisper (singleton)
+whisper_service = WhisperService()
 
 
-# --- WEBSOCKET TRANSCRIPTION ---
-@app.websocket("/transcribe")
-async def transcribe_ws(websocket: WebSocket):
+@app.get("/")
+def root():
+    return {"message": "Minuta API", "version": "0.1.0"}
+
+
+@app.websocket("/ws/transcribe")
+async def websocket_transcribe(websocket: WebSocket):
+    """Endpoint WebSocket pour la transcription en temps réel"""
     await websocket.accept()
-
-    from backend.app.audio_buffer import AudioBuffer
-    buffer = AudioBuffer()
-
-    full_text = []
-
-
-    import asyncio
-
-    def send_safe(text: str):
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.get_event_loop()
-
-        # accumulate transcription
-        full_text.append(text)
-
-        if websocket.client_state.value == 1:  # open
-            asyncio.run_coroutine_threadsafe(
-                websocket.send_text(text),
-                loop
-            )
-
-
-
-    from backend.app.whisper_worker import WhisperWorker
-    whisper = WhisperWorker(
-        whisper_path="/Users/cartelgouabou/RD/minuta-scribe/whisper.cpp",
-        model_path="/Users/cartelgouabou/RD/minuta-scribe/whisper.cpp/models/ggml-small.bin",
-        audio_buffer=buffer,
-        callback=send_safe
-    )
-    whisper.start()
+    
+    audio_chunks = []
+    is_recording = True
+    last_partial_time = 0
+    language = "fr"  # Par défaut français
+    import time
 
     try:
-        while True:
-            message = await websocket.receive()
-            print("RECEIVED RAW:", message)
-
-            if message["type"] == "websocket.receive":
-                if message.get("bytes") is not None:
-                    buffer.append(message["bytes"])
-                else:
-                    print("⚠️ WARNING: Received non-bytes payload")
-                    print("Payload:", message)
-
-            elif message["type"] == "websocket.disconnect":
-                print("Client disconnected")
+        while is_recording:
+            # Recevoir les données (peut être du JSON ou des bytes)
+            try:
+                data = await websocket.receive()
+            except WebSocketDisconnect:
+                is_recording = False
                 break
 
+            if "text" in data:
+                # Message texte (ex: {"type": "stop"} ou {"language": "fr"})
+                try:
+                    message = json.loads(data["text"])
+                    if message.get("type") == "stop":
+                        is_recording = False
+                        break
+                    elif "language" in message:
+                        language = message["language"]
+                        print(f"Langue sélectionnée: {language}")
+                except (json.JSONDecodeError, KeyError):
+                    pass
+            elif "bytes" in data:
+                # Chunk audio (webm/opus)
+                chunk_bytes = data["bytes"]
+                audio_chunks.append(chunk_bytes)
+                print(f"Chunk audio reçu: {len(chunk_bytes)} bytes (total: {len(audio_chunks)} chunks)")
+                
+                # Transcription partielle toutes les 15 secondes (environ 15 chunks à 100ms)
+                current_time = time.time()
+                if current_time - last_partial_time >= 15.0 and len(audio_chunks) >= 15:
+                    try:
+                        # Transcrire les 15 derniers chunks (environ 1.5 secondes d'audio)
+                        chunks_to_transcribe = audio_chunks[-15:]
+                        partial_text = whisper_service.transcribe_streaming(chunks_to_transcribe, language=language)
+                        if partial_text.strip():
+                            await websocket.send_json({
+                                "type": "partial",
+                                "text": partial_text
+                            })
+                            print(f"Transcription partielle envoyée: '{partial_text[:50]}...'")
+                        last_partial_time = current_time
+                    except Exception as e:
+                        print(f"Erreur transcription partielle: {e}")
+                        # Ne pas bloquer si la transcription partielle échoue
+
+        # Transcription finale - combiner tous les chunks en un seul fichier
+        if audio_chunks:
+            try:
+                total_bytes = sum(len(chunk) for chunk in audio_chunks)
+                print(f"Transcription finale de {len(audio_chunks)} chunks audio ({total_bytes} bytes total)...")
+                final_text = whisper_service.transcribe_streaming(audio_chunks, language=language)
+                
+                # Vérifier si la connexion WebSocket est encore ouverte
+                try:
+                    if final_text and final_text.strip():
+                        await websocket.send_json({
+                            "type": "final",
+                            "text": final_text
+                        })
+                        print(f"Transcription finale envoyée: {len(final_text)} caractères - '{final_text[:50]}...'")
+                    else:
+                        print("Transcription finale vide ou invalide")
+                        try:
+                            await websocket.send_json({
+                                "type": "error",
+                                "message": "La transcription est vide. Vérifiez que vous avez bien parlé dans le microphone."
+                            })
+                        except:
+                            print("Impossible d'envoyer l'erreur, WebSocket fermé")
+                except Exception as send_error:
+                    print(f"Erreur lors de l'envoi du résultat: {send_error}")
+            except Exception as e:
+                print(f"Erreur transcription finale: {e}")
+                import traceback
+                traceback.print_exc()
+                try:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": f"Erreur lors de la transcription: {str(e)}"
+                    })
+                except:
+                    print("Impossible d'envoyer l'erreur, WebSocket fermé")
+        else:
+            print("Aucun chunk audio reçu")
+            try:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Aucun audio reçu"
+                })
+            except:
+                print("Impossible d'envoyer l'erreur, WebSocket fermé")
+    except WebSocketDisconnect:
+        print("Client WebSocket déconnecté")
     except Exception as e:
-        print("WebSocket closed:", e)
-
-    # --- Generate automatic summary ---
-    meeting_text = "\n".join(full_text)
-
-    if meeting_text.strip():
-        from backend.app.ollama_client import generate_response
-        summary_prompt = (
-            "Tu es un assistant expert en compte rendu de réunion. "
-            "Résume le texte suivant en français, de manière claire, concise et structurée. "
-            "Fournis :\n"
-            "- 5 points clés\n"
-            "- Décisions prises\n"
-            "- Actions à mener\n"
-            "Texte :\n"
-            f"{meeting_text}"
-        )
-
-        summary = await generate_response(DEFAULT_MODEL, summary_prompt)
-
-        # Send summary back to frontend
+        print(f"Erreur WebSocket: {e}")
+        import traceback
+        traceback.print_exc()
         try:
-            await websocket.send_text("=== RÉSUMÉ DE RÉUNION ===\n" + summary)
+            await websocket.send_json({
+                "type": "error",
+                "message": str(e)
+            })
         except:
             pass
 
-    whisper.stop()
-    print("connection closed")
 
-
-
-from backend.app.ollama_client import generate_response
-from pydantic import BaseModel
-
-
-class SummaryRequest(BaseModel):
-    text: str
-
-
-@app.post("/summary")
-async def generate_summary(payload: SummaryRequest):
-    """
-    Résume un texte à l'aide d'un LLM local via Ollama.
-    """
-    prompt = f"""
-Tu es un assistant expert en compte rendu de réunion.
-
-Résume ce texte de manière claire, structurée et professionnelle :
-- 5 bullet points essentiels
-- Décisions prises
-- Actions à mener (si présentes)
-- Ton neutre
-- En français
-
-Texte :
-{payload.text}
-"""
-
-    response = await generate_response(DEFAULT_MODEL, prompt=prompt)
-    return {"summary": response}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

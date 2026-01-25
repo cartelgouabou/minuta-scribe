@@ -1,0 +1,116 @@
+.prompts {
+  width: 100%;
+}
+
+.prompts h1 {
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.search-box {
+  margin-bottom: 1rem;
+}
+
+.search-box input {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
+}
+
+.prompt-list {
+  margin-bottom: 2rem;
+}
+
+.prompt-list table {
+  border-collapse: collapse;
+  width: 100%;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.prompt-list th,
+.prompt-list td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.prompt-list th {
+  background-color: var(--bg-tertiary);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.prompt-list td {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+}
+
+.prompt-list tr:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.prompt-list tr:last-child td {
+  border-bottom: none;
+}
+
+.prompt-form {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.prompt-form h2 {
+  color: var(--text-primary);
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.prompt-form label {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.prompt-form input,
+.prompt-form textarea {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
+}
+
+.prompt-form input:focus,
+.prompt-form textarea:focus {
+  outline: none;
+  border-color: #646cff;
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2);
+}
+
+.form-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+/* Messages de statut */
+.prompt-list > div:not(.search-box):not(table) {
+  color: var(--text-secondary);
+  padding: 1rem;
+  text-align: center;
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+/* Style d'erreur adaptatif */
+.prompts .error {
+  color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}

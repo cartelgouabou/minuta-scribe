@@ -1,133 +1,222 @@
-# minuta-scribe
-## 🔊 Installation Whisper.cpp (Offline Speech-to-Text)
+# Minuta - Transcription et Génération de Comptes Rendus
 
-Cette section décrit l'installation de **Whisper.cpp**, un moteur de transcription 100% local compilé en C/C++.
+**Minuta** est une application web simple qui vous permet d'enregistrer vos réunions, de les transcrire automatiquement et de générer des comptes rendus professionnels en quelques clics.
 
----
+## 🎯 Qu'est-ce que Minuta ?
 
-### 1. 🧰 Prérequis macOS
+Minuta est un outil qui :
+- **Enregistre** votre voix pendant une réunion
+- **Transcrit** automatiquement ce qui est dit en texte
+- **Génère** un compte rendu professionnel grâce à l'intelligence artificielle
+- **Exporte** le résultat en PDF ou texte
 
-Avant d’installer Whisper.cpp, installe les outils nécessaires :
+Tout fonctionne **localement** sur votre ordinateur (sauf la génération du compte rendu qui utilise une API cloud).
+
+## ✨ Fonctionnalités principales
+
+### Page Meeting
+- 🎤 Enregistrement audio depuis votre navigateur
+- 📝 Transcription automatique en temps réel (français ou anglais)
+- ✏️ Édition de la transcription avant génération
+- 🤖 Génération de compte rendu via IA
+- 💾 Export en PDF ou texte
+- 📊 Statistiques en temps réel (durée, nombre de mots)
+
+### Page Prompts
+- 📋 Gestion de vos modèles de comptes rendus
+- 🔍 Recherche rapide
+- ➕ Création, modification et suppression de prompts
+
+## 🚀 Installation rapide
+
+### Option 1 : Avec Docker (Recommandé - Le plus simple)
+
+**Prérequis :** Docker et Docker Compose installés sur votre ordinateur.
+
+1. **Télécharger le projet**
+   ```bash
+   git clone <repository-url>
+   cd minuta-scribe
+   ```
+
+2. **Créer votre clé API Groq**
+   - Allez sur [https://console.groq.com/](https://console.groq.com/)
+   - Créez un compte gratuit
+   - Générez une clé API
+   - Copiez la clé
+
+3. **Configurer l'application**
+   ```bash
+   cd docker
+   echo "GROQ_API_KEY=votre-clé-api-ici" > .env
+   ```
+
+4. **Lancer l'application**
+   ```bash
+   docker-compose up --build
+   ```
+
+5. **Ouvrir dans votre navigateur**
+   - Allez sur [http://localhost](http://localhost)
+   - L'application est prête !
+
+### Option 2 : Installation manuelle
+
+**Prérequis :**
+- Python 3.10 ou supérieur
+- Node.js 18 ou supérieur
+- ffmpeg (pour la conversion audio)
+
+#### Étape 1 : Installer les outils nécessaires
+
+**macOS :**
+```bash
+# Installer Homebrew si pas déjà installé
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Installer les outils
+brew install python@3.10 node ffmpeg poetry
+```
+
+**Linux (Ubuntu/Debian) :**
+```bash
+# Python et Node.js
+sudo apt-get update
+sudo apt-get install -y python3.10 python3-pip nodejs npm ffmpeg
+
+# Installer Poetry
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+**Windows :**
+- Téléchargez Python depuis [python.org](https://www.python.org/downloads/)
+- Téléchargez Node.js depuis [nodejs.org](https://nodejs.org/)
+- Téléchargez ffmpeg depuis [ffmpeg.org](https://ffmpeg.org/download.html)
+- Installez Poetry : `pip install poetry`
+
+#### Étape 2 : Télécharger le projet
 
 ```bash
-brew install make
-brew install cmake
-brew install ffmpeg
+git clone <repository-url>
+cd minuta-scribe
 ```
 
----
-
-### 2. 📥 Cloner le dépôt Whisper.cpp
+#### Étape 3 : Configurer le backend
 
 ```bash
-git clone https://github.com/ggerganov/whisper.cpp.git
-cd whisper.cpp
+cd backend
+
+# Installer les dépendances
+poetry install
+
+# Créer le fichier de configuration
+cp env.example .env
+
+# Éditer .env et ajouter votre clé API Groq
+# Ouvrez .env dans un éditeur de texte et remplacez :
+# GROQ_API_KEY=votre-clé-api-ici
 ```
 
----
-
-### 3. 🔧 Compilation de Whisper.cpp
+#### Étape 4 : Configurer le frontend
 
 ```bash
-make
+cd ../frontend
+
+# Installer les dépendances
+npm install
 ```
 
-Après compilation, les exécutables sont disponibles dans `./build/bin`.
+#### Étape 5 : Lancer l'application
 
----
+**Ouvrez deux terminaux :**
 
-### 4. 📦 Télécharger un modèle Whisper
-
-Exemple pour le modèle **small** (bon compromis vitesse/qualité) :
-
+**Terminal 1 - Backend :**
 ```bash
-bash ./models/download-ggml-model.sh small
+cd backend
+poetry run uvicorn app.main:app --reload --port 8000
 ```
 
-Le modèle sera téléchargé dans :
-
-```
-whisper.cpp/models/ggml-small.bin
-```
-
----
-
-### 5. 🎤 Enregistrer un fichier audio WAV (macOS)
-
-Lister les devices audio :
-
+**Terminal 2 - Frontend :**
 ```bash
-ffmpeg -f avfoundation -list_devices true -i ""
+cd frontend
+npm run dev
 ```
 
-Exemples de devices :
+**Ouvrez votre navigateur :**
+- Allez sur [http://localhost:5173](http://localhost:5173)
+- L'application est prête !
 
-```
-[0] Microphone externe
-[1] Microphone MacBook Pro
-```
+## 📖 Comment utiliser Minuta
 
-Enregistrer 3 secondes depuis le micro :
+### 1. Enregistrer une réunion
 
-```bash
-ffmpeg -f avfoundation -i ":0" -t 3 test.wav
-```
+1. Allez sur la page **Meeting**
+2. Sélectionnez la langue (Français ou Anglais)
+3. Cliquez sur **"Start Recording"**
+4. Autorisez l'accès au microphone si demandé
+5. Parlez normalement
+6. Cliquez sur **"Stop Recording"** quand vous avez terminé
 
----
+### 2. Éditer la transcription
 
-### 6. 🧪 Tester Whisper.cpp en ligne de commande
+1. La transcription apparaît automatiquement
+2. Vous pouvez modifier le texte directement dans la zone de texte
+3. Corrigez les erreurs si nécessaire
 
-```bash
-./build/bin/whisper-cli \
-  -m models/ggml-small.bin \
-  -f test.wav
-```
+### 3. Générer le compte rendu
 
----
+1. Sélectionnez un prompt (modèle de compte rendu)
+2. Cliquez sur **"Générer le compte rendu"**
+3. Attendez quelques secondes
+4. Le compte rendu apparaît en dessous
 
-### 7. 🐍 Test Python (script fourni)
+### 4. Exporter ou copier
 
-Créer le fichier :
+- **Copier** : Cliquez sur "Copier" pour copier le texte
+- **Exporter en PDF** : Cliquez sur "Exporter en PDF"
+- **Exporter en texte** : Cliquez sur "Exporter en .txt"
 
-```
-project/backend/app/test_whisper.py
-```
+## 🎨 Thème sombre/clair
 
-Contenu :
+Cliquez sur l'icône ☀️/🌙 en haut à droite pour basculer entre le thème sombre et clair.
 
-```python
-import subprocess
-import sys
-import os
+## ❓ Problèmes courants
 
-WHISPER_PATH = os.path.expanduser("~/RD/minuta-scribe/whisper.cpp")
-MODEL_PATH = f"{WHISPER_PATH}/models/ggml-small.bin"
-WAV_FILE = "test.wav"
+### "ffmpeg not found"
+**Solution :** Installez ffmpeg sur votre système (voir prérequis ci-dessus).
 
-def transcribe():
-    cmd = [
-        f"{WHISPER_PATH}/build/bin/whisper-cli",
-        "-m", MODEL_PATH,
-        "-f", WAV_FILE
-    ]
+### "GROQ_API_KEY not set"
+**Solution :** Vérifiez que le fichier `.env` existe dans le dossier `backend/` et contient votre clé API.
 
-    print("Running command:", " ".join(cmd))
-    result = subprocess.run(cmd, capture_output=True, text=True)
+### Le microphone ne fonctionne pas
+**Solution :** 
+- Vérifiez les permissions du navigateur
+- Utilisez Chrome ou Edge (recommandé)
+- Vérifiez que votre microphone fonctionne dans d'autres applications
 
-    print("=== TRANSCRIPTION ===")
-    print(result.stdout)
+### La transcription est vide
+**Solution :**
+- Vérifiez que vous parlez clairement
+- Vérifiez que le microphone capte bien le son
+- Essayez de parler plus près du microphone
 
-if __name__ == "__main__":
-    if not os.path.exists(WAV_FILE):
-        print(f"Error: {WAV_FILE} not found")
-        sys.exit(1)
+### L'application ne démarre pas
+**Solution :**
+- Vérifiez que tous les prérequis sont installés
+- Vérifiez que les ports 8000 (backend) et 5173 (frontend) ne sont pas utilisés
+- Consultez les messages d'erreur dans les terminaux
 
-    transcribe()
-```
+## 📞 Support
 
-Lancer le test :
+Pour toute question ou problème, consultez le [README technique](README_TECH.md) ou ouvrez une issue sur le repository.
 
-```bash
-cd project/backend/app
-python test_whisper.py
-```
+## 📝 Notes importantes
+
+- **Confidentialité** : La transcription se fait localement sur votre ordinateur. Seule la génération du compte rendu utilise une API cloud (Groq).
+- **Navigateurs recommandés** : Chrome ou Edge pour la meilleure expérience
+- **Performance** : La première transcription peut être plus lente (téléchargement du modèle Whisper)
+- **Stockage** : Les transcriptions ne sont pas sauvegardées automatiquement. Exportez-les si vous voulez les conserver.
+
+## 🎉 C'est tout !
+
+Vous êtes prêt à utiliser Minuta. Bonne transcription !
