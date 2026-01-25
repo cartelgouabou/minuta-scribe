@@ -12,16 +12,26 @@ from app.services.whisper_service import WhisperService
 # Charger les variables d'environnement
 load_dotenv()
 
-# Initialiser la base de données
+# Initialiser la base de données et seed les prompts au démarrage
+print("🚀 Démarrage de l'application Minuta...")
+print("📦 Initialisation de la base de données...")
 init_db()
+print("🌱 Seed des prompts par défaut...")
 seed_prompts()
+print("✅ Application prête!")
 
 app = FastAPI(title="Minuta API", version="0.1.0")
 
 # CORS middleware
+# Autoriser les origines pour développement local et Docker
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173",  # Vite dev server
+        "http://localhost:3000",  # Alternative dev server
+        "http://localhost",        # Docker Nginx
+        "http://localhost:80",    # Docker Nginx (explicit)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

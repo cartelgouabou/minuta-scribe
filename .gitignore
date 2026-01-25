@@ -24,7 +24,13 @@ env/
 ENV/
 .venv
 
-# Poetry
+# Python Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Poetry (ancien, maintenant on utilise pip)
 # poetry.lock devrait être versionné pour garantir la reproductibilité
 
 # Node

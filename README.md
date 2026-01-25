@@ -29,15 +29,23 @@ Tout fonctionne **localement** sur votre ordinateur (sauf la génération du com
 
 ## 🚀 Installation rapide
 
-### Option 1 : Avec Docker (Recommandé - Le plus simple)
+### Avec Docker (Recommandé - Le plus simple)
 
 **Prérequis :** Docker et Docker Compose installés sur votre ordinateur.
 
+> 💡 **Astuce :** Si Docker n'est pas installé, vous pouvez utiliser le script `start.sh` qui vérifiera et vous proposera de l'installer automatiquement.
+
 1. **Télécharger le projet**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/cartelgouabou/minuta-scribe.git
    cd minuta-scribe
    ```
+   
+   > **Note :** Si vous avez GitHub CLI installé, vous pouvez aussi utiliser :
+   > ```bash
+   > gh repo clone cartelgouabou/minuta-scribe
+   > cd minuta-scribe
+   > ```
 
 2. **Créer votre clé API Groq**
    - Allez sur [https://console.groq.com/](https://console.groq.com/)
@@ -46,105 +54,34 @@ Tout fonctionne **localement** sur votre ordinateur (sauf la génération du com
    - Copiez la clé
 
 3. **Configurer l'application**
+   
+   Créez le fichier `.env` dans le dossier `backend/` :
    ```bash
-   cd docker
-   echo "GROQ_API_KEY=votre-clé-api-ici" > .env
+   cd backend
+   cp env.example .env
+   # Éditez .env et ajoutez votre clé API Groq
+   # GROQ_API_KEY=votre-clé-api-ici
    ```
 
 4. **Lancer l'application**
+   
+   **Option A : Utiliser le script automatique (recommandé)**
    ```bash
+   ./start.sh
+   ```
+   Le script vérifiera Docker, vous proposera de l'installer si nécessaire, puis lancera l'application.
+   
+   **Option B : Lancer manuellement**
+   ```bash
+   cd docker
    docker-compose up --build
    ```
+   
+   > **Note :** Docker Compose utilisera automatiquement le fichier `backend/.env` pour les variables d'environnement.
 
 5. **Ouvrir dans votre navigateur**
    - Allez sur [http://localhost](http://localhost)
    - L'application est prête !
-
-### Option 2 : Installation manuelle
-
-**Prérequis :**
-- Python 3.10 ou supérieur
-- Node.js 18 ou supérieur
-- ffmpeg (pour la conversion audio)
-
-#### Étape 1 : Installer les outils nécessaires
-
-**macOS :**
-```bash
-# Installer Homebrew si pas déjà installé
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Installer les outils
-brew install python@3.10 node ffmpeg poetry
-```
-
-**Linux (Ubuntu/Debian) :**
-```bash
-# Python et Node.js
-sudo apt-get update
-sudo apt-get install -y python3.10 python3-pip nodejs npm ffmpeg
-
-# Installer Poetry
-curl -sSL https://install.python-poetry.org | python3 -
-```
-
-**Windows :**
-- Téléchargez Python depuis [python.org](https://www.python.org/downloads/)
-- Téléchargez Node.js depuis [nodejs.org](https://nodejs.org/)
-- Téléchargez ffmpeg depuis [ffmpeg.org](https://ffmpeg.org/download.html)
-- Installez Poetry : `pip install poetry`
-
-#### Étape 2 : Télécharger le projet
-
-```bash
-git clone <repository-url>
-cd minuta-scribe
-```
-
-#### Étape 3 : Configurer le backend
-
-```bash
-cd backend
-
-# Installer les dépendances
-poetry install
-
-# Créer le fichier de configuration
-cp env.example .env
-
-# Éditer .env et ajouter votre clé API Groq
-# Ouvrez .env dans un éditeur de texte et remplacez :
-# GROQ_API_KEY=votre-clé-api-ici
-```
-
-#### Étape 4 : Configurer le frontend
-
-```bash
-cd ../frontend
-
-# Installer les dépendances
-npm install
-```
-
-#### Étape 5 : Lancer l'application
-
-**Ouvrez deux terminaux :**
-
-**Terminal 1 - Backend :**
-```bash
-cd backend
-poetry run uvicorn app.main:app --reload --port 8000
-```
-
-**Terminal 2 - Frontend :**
-```bash
-cd frontend
-npm run dev
-```
-
-**Ouvrez votre navigateur :**
-- Allez sur [http://localhost:5173](http://localhost:5173)
-- L'application est prête !
 
 ## 📸 Aperçu de l'interface
 

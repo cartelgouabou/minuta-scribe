@@ -1,0 +1,30 @@
+# Minuta Backend - Requirements
+# Installation: pip install -r requirements.txt
+
+# Web Framework
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+websockets>=12.0
+
+# Data Validation
+# pydantic-settings 2.5.0 nécessite pydantic>=2.7.0
+pydantic>=2.7.0,<3.0.0
+pydantic-settings>=2.5.0
+
+# Database
+sqlalchemy>=2.0.23
+
+# Audio Transcription (Whisper)
+openai-whisper>=20231117
+
+# LLM API
+groq>=0.4.0
+
+# Utilities
+python-multipart>=0.0.6
+python-dotenv>=1.0.0
+
+# Development dependencies (optional)
+# pytest==7.4.3
+# black==23.11.0
+# ruff==0.1.6

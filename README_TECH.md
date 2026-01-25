@@ -398,7 +398,7 @@ Response: {
 
 ### Prérequis
 
-- **Python 3.10+** avec Poetry
+- **Python 3.10+** avec pip
 - **Node.js 18+** et npm
 - **ffmpeg** (conversion audio)
 - **Docker** (optionnel, pour déploiement)
@@ -412,7 +412,9 @@ cd minuta-scribe
 
 # Backend
 cd backend
-poetry install
+python3 -m venv venv
+source venv/bin/activate  # Sur Windows: venv\Scripts\activate
+pip install -r requirements.txt
 cp env.example .env
 # Éditer .env avec votre GROQ_API_KEY
 
@@ -426,7 +428,8 @@ npm install
 **Backend :**
 ```bash
 cd backend
-poetry run uvicorn app.main:app --reload --port 8000
+source venv/bin/activate  # Sur Windows: venv\Scripts\activate
+uvicorn app.main:app --reload --port 8000
 ```
 
 **Frontend :**
@@ -439,7 +442,8 @@ npm run dev
 ```bash
 # Backend
 cd backend
-poetry run pytest
+source venv/bin/activate  # Sur Windows: venv\Scripts\activate
+pytest  # Si pytest est installé
 
 # Frontend
 cd frontend
@@ -452,9 +456,11 @@ npm run lint
 # Script de démarrage rapide
 ./start.sh
 
-# Formatage code
-cd backend && poetry run black app/
-cd frontend && npm run lint -- --fix
+# Formatage code (si black est installé)
+cd backend
+source venv/bin/activate  # Sur Windows: venv\Scripts\activate
+black app/  # Si black est installé: pip install black
+cd ../frontend && npm run lint -- --fix
 ```
 
 ---
@@ -545,6 +551,7 @@ poetry run pytest --cov=app tests/
 
 **Build et lancement :**
 ```bash
+# S'assurer que backend/.env existe avec GROQ_API_KEY
 cd docker
 docker-compose up --build
 ```
@@ -553,6 +560,8 @@ docker-compose up --build
 ```bash
 docker-compose -f docker-compose.prod.yml up -d
 ```
+
+> **Note :** Docker Compose utilise automatiquement le fichier `../backend/.env` grâce à la directive `env_file` dans `docker-compose.yml`. Assurez-vous que ce fichier existe et contient votre `GROQ_API_KEY`.
 
 ### Variables d'environnement production
 
