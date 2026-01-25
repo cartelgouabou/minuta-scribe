@@ -65,3 +65,7 @@ frontend/build/
 # Backend
 backend/.env
 backend/*.db
+
+# Documentation screenshots (optionnel - décommentez si vous ne voulez pas versionner les images)
+# docs/screenshots/*.png
+# docs/screenshots/*.jpg
