@@ -590,7 +590,7 @@ docker-compose -f docker-compose.prod.yml up -d
 1. **Audio système** : Seul le micro est supporté (pas getDisplayMedia)
 2. **Navigateurs** : Chrome/Edge recommandés
 3. **Performance** : Transcription peut être lente selon CPU
-4. **Stockage** : Pas de persistance des transcriptions/comptes rendus
+4. **Stockage** : Pas de persistance des transcriptions/comptes rendus (volontaire)
 5. **Taille Docker** : Image backend ~2-3GB (Whisper)
 
 ### Améliorations prévues

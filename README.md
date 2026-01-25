@@ -27,35 +27,6 @@ Tout fonctionne **localement** sur votre ordinateur (sauf la génération du com
 - 🔍 Recherche rapide
 - ➕ Création, modification et suppression de prompts
 
-## 📸 Aperçu de l'interface
-
-### Page Meeting - Enregistrement et transcription
-
-![Page Meeting - Interface principale](docs/screenshots/meeting-page.png)
-
-*Capture d'écran de la page Meeting montrant :*
-- Sélecteur de langue (Français/Anglais)
-- Bouton d'enregistrement
-- Statistiques en temps réel (durée, nombre de mots)
-- Zone d'édition de la transcription
-- Options de génération de compte rendu
-
-### Page Prompts - Gestion des modèles
-
-![Page Prompts - Gestion des modèles](docs/screenshots/prompts-page.png)
-
-*Capture d'écran de la page Prompts montrant :*
-- Liste des prompts disponibles
-- Formulaire de création/édition
-- Recherche de prompts
-- Actions CRUD (Créer, Modifier, Supprimer)
-
-> **💡 Note :** Pour ajouter vos propres captures d'écran :
-> 1. Créez le dossier `docs/screenshots/` à la racine du projet (déjà créé)
-> 2. Placez vos captures d'écran nommées `meeting-page.png` et `prompts-page.png`
-> 3. Format recommandé : PNG, taille optimale 1200x800 pixels
-> 4. Les images s'afficheront automatiquement dans le README
-
 ## 🚀 Installation rapide
 
 ### Option 1 : Avec Docker (Recommandé - Le plus simple)
@@ -197,11 +168,6 @@ npm run dev
 - Formulaire de création/édition
 - Recherche de prompts
 - Actions CRUD (Créer, Modifier, Supprimer)
-
-> **Note :** Pour ajouter vos propres captures d'écran :
-> 1. Créez le dossier `docs/screenshots/` à la racine du projet
-> 2. Placez vos captures d'écran nommées `meeting-page.png` et `prompts-page.png`
-> 3. Les images s'afficheront automatiquement dans le README
 
 ## 📖 Comment utiliser Minuta
 
