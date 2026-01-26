@@ -7,7 +7,10 @@
 #   chmod +x start.sh
 #
 # Puis lancer le script:
-#   ./start.sh
+#   ./start.sh          # Pour installer/lancer l'application
+#
+# Pour désinstaller, utilisez:
+#   ./uninstall.sh
 
 set -e  # Arrêter en cas d'erreur
 
