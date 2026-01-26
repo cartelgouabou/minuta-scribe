@@ -39,6 +39,81 @@ error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
+# Fonction pour vérifier si on est dans Git Bash sur Windows
+is_git_bash() {
+    # Vérifier si on est dans Git Bash (MSYS)
+    if [[ "$OSTYPE" == "msys" ]] || [[ -n "$MSYSTEM" ]]; then
+        # Vérifier que MSYSTEM est MINGW64 ou MINGW32 (Git Bash)
+        if [[ "$MSYSTEM" == "MINGW64" ]] || [[ "$MSYSTEM" == "MINGW32" ]]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Fonction pour détecter le système d'exploitation
+detect_os() {
+    # Détecter Windows (uniquement Git Bash)
+    if is_git_bash; then
+        echo "windows"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "linux"
+    else
+        echo "unknown"
+    fi
+}
+
+# Fonction pour installer Git (qui inclut Git Bash) sur Windows
+install_git_windows() {
+    info "Installation de Git pour Windows (qui inclut Git Bash)..."
+    echo ""
+    echo "Git Bash est requis pour exécuter ce script sur Windows."
+    echo ""
+    echo "Pour installer Git :"
+    echo "   1. Téléchargez Git depuis: https://git-scm.com/download/win"
+    echo "   2. Exécutez l'installateur"
+    echo "   3. Lors de l'installation, assurez-vous que 'Git Bash Here' est sélectionné"
+    echo "   4. Après l'installation, relancez ce script depuis Git Bash"
+    echo ""
+    read -p "Voulez-vous ouvrir la page de téléchargement de Git maintenant ? (y/N) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if command -v start &> /dev/null; then
+            start "https://git-scm.com/download/win"
+        elif command -v xdg-open &> /dev/null; then
+            xdg-open "https://git-scm.com/download/win"
+        elif command -v open &> /dev/null; then
+            open "https://git-scm.com/download/win"
+        else
+            info "Ouvrez votre navigateur et allez sur: https://git-scm.com/download/win"
+        fi
+        echo ""
+        info "Après avoir installé Git :"
+        echo "   1. Fermez ce terminal"
+        echo "   2. Ouvrez Git Bash (cherchez 'Git Bash' dans le menu Démarrer)"
+        echo "   3. Naviguez vers ce répertoire: cd $(pwd)"
+        echo "   4. Relancez ce script avec: ./uninstall.sh"
+        echo ""
+        read -p "Appuyez sur Entrée une fois Git installé..."
+        exit 0
+    else
+        error "Git Bash est requis pour exécuter ce script sur Windows."
+        echo "   Installez Git depuis: https://git-scm.com/download/win"
+        exit 1
+    fi
+}
+
+# Vérifier si on est sur Windows et dans Git Bash
+if [[ "$OSTYPE" == "msys" ]] || [[ -n "$MSYSTEM" ]]; then
+    if ! is_git_bash; then
+        error "Ce script doit être exécuté dans Git Bash sur Windows."
+        echo ""
+        install_git_windows
+    fi
+fi
+
 # Vérifier Docker
 info "Vérification de Docker..."
 if ! command -v docker &> /dev/null; then
@@ -49,8 +124,18 @@ fi
 
 if ! docker info &> /dev/null; then
     error "Docker est installé mais ne fonctionne pas."
-    echo "   Sur macOS: Assurez-vous que Docker Desktop est démarré"
-    echo "   Sur Linux: Vous devrez peut-être utiliser 'sudo docker'"
+    OS=$(detect_os)
+    case $OS in
+        macos)
+            echo "   Sur macOS: Assurez-vous que Docker Desktop est démarré"
+            ;;
+        windows)
+            echo "   Sur Windows: Assurez-vous que Docker Desktop est démarré et en cours d'exécution"
+            ;;
+        *)
+            echo "   Sur Linux: Vous devrez peut-être utiliser 'sudo docker' ou vous reconnecter après avoir été ajouté au groupe docker"
+            ;;
+    esac
     exit 1
 fi
 success "Docker fonctionne correctement"

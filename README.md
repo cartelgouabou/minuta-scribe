@@ -12,6 +12,48 @@ Minuta est un outil qui :
 
 Tout fonctionne **localement** sur votre ordinateur, y compris la génération du compte rendu via Ollama avec des modèles LLM locaux.
 
+
+## 📦 Version 2.0 - Janvier 2026
+
+### 🎉 Nouvelles fonctionnalités
+
+**Version 2.0** apporte des améliorations significatives pour une expérience utilisateur encore plus simple et complète :
+
+#### ✨ Améliorations majeures
+
+1. **📝 Édition du compte rendu**
+   - Vous pouvez maintenant **éditer le compte rendu généré** directement dans l'interface avant de l'exporter ou de le copier
+   - Indicateur visuel lorsque le compte rendu a été modifié
+   - Les modifications sont automatiquement incluses dans les exports PDF et TXT
+
+2. **🤖 Choix entre deux modèles LLM**
+   - Sélection entre **Mistral 7B Instruct** et **Llama 3.2 3B Instruct**
+   - Téléchargement automatique des deux modèles au démarrage
+   - Comparaison facile des résultats entre les modèles
+
+3. **🚀 Script d'installation amélioré (`start.sh`)**
+   - Support multi-plateforme complet (macOS, Linux, Windows)
+   - Détection automatique du système d'exploitation
+   - Installation automatique de Docker si nécessaire
+   - Installation automatique de Git Bash sur Windows si nécessaire
+   - Téléchargement automatique des modèles LLM au premier lancement
+   - Instructions claires pour chaque plateforme
+
+4. **🗑️ Script de désinstallation (`uninstall.sh`)**
+   - Désinstallation complète en un seul clic
+   - Suppression de tous les conteneurs, images, volumes et réseaux Docker
+   - Libération automatique de l'espace disque (~10-15 GB)
+   - Confirmation avant suppression pour éviter les erreurs
+
+#### 🔧 Améliorations techniques
+
+- Support Windows via Git Bash avec installation automatique
+- Configuration Nginx améliorée pour les WebSockets
+- Gestion d'erreurs WebSocket optimisée
+- Variables CSS pour une meilleure cohérence visuelle
+
+---
+
 > **💡 Installation simple :** Utilisez `./start.sh` pour installer et lancer l'application. Utilisez `./uninstall.sh` pour désinstaller complètement.
 
 ## ✨ Fonctionnalités principales
@@ -20,8 +62,9 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
 - 🎤 Enregistrement audio depuis votre navigateur
 - 📝 Transcription automatique en temps réel (français ou anglais)
 - ✏️ Édition de la transcription avant génération
-- 🤖 Génération de compte rendu via IA
-- 💾 Export en PDF ou texte
+- 🤖 Génération de compte rendu via IA avec choix du modèle (Mistral 7B ou Llama 3.2 3B)
+- ✏️ **Édition du compte rendu généré** avant export (nouveau en v2.0)
+- 💾 Export en PDF ou texte du compte rendu édité
 - 📊 Statistiques en temps réel (durée, nombre de mots)
 
 ### Page Prompts
@@ -31,7 +74,35 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
 
 ## 🚀 Installation rapide
 
-### Installation en 3 étapes simples
+### Installation en 4 étapes simples
+
+0. **Ouvrir un terminal et se placer dans le répertoire d'installation**
+   
+   **Sur macOS :**
+   - Ouvrez l'application **Terminal** (cherchez "Terminal" dans Spotlight : `Cmd + Espace`)
+   - Naviguez vers le dossier Documents :
+     ```bash
+     cd ~/Documents
+     ```
+   
+   **Sur Linux :**
+   - Ouvrez un terminal (généralement `Ctrl + Alt + T` ou cherchez "Terminal" dans le menu)
+   - Naviguez vers le dossier Documents :
+     ```bash
+     cd ~/Documents
+     ```
+   
+   **Sur Windows :**
+   - Ouvrez **Git Bash** (requis pour exécuter les scripts)
+     - Si Git Bash n'est pas installé, le script `start.sh` vous proposera de l'installer automatiquement
+     - Cliquez droit dans le dossier Documents → "Git Bash Here"
+     - Ou ouvrez Git Bash et naviguez :
+       ```bash
+       cd ~/Documents
+       ```
+     - **Note :** Les scripts ne fonctionnent qu'avec Git Bash sur Windows. Si Git Bash n'est pas installé, le script vous guidera pour l'installer.
+   
+   > **Note :** Vous pouvez choisir n'importe quel répertoire pour installer l'application. Le dossier Documents est suggéré par défaut, mais vous pouvez utiliser un autre emplacement si vous préférez.
 
 1. **Télécharger le projet**
    ```bash
@@ -47,12 +118,20 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
 
 2. **Rendre les scripts exécutables**
    
-   Sur Linux et macOS, vous devez rendre les scripts exécutables :
+   **Sur Linux et macOS :**
    ```bash
    chmod +x start.sh uninstall.sh
    ```
    
-   > **Note :** Cette étape n'est nécessaire qu'une seule fois après le clonage du projet. Sur Windows avec Git Bash, les scripts sont généralement déjà exécutables.
+   **Sur Windows :**
+   - Si vous utilisez **Git Bash** : Les scripts sont généralement déjà exécutables
+   - Si ce n'est pas le cas, exécutez :
+     ```bash
+     chmod +x start.sh uninstall.sh
+     ```
+   - **Note :** Les scripts ne fonctionnent qu'avec Git Bash sur Windows.
+   
+   > **Note :** Cette étape n'est nécessaire qu'une seule fois après le clonage du projet.
 
 3. **Lancer l'application avec le script automatique**
    ```bash
@@ -67,6 +146,8 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
    - ✅ Préparer l'application pour l'utilisation
    
    > **Note :** Aucune configuration manuelle n'est nécessaire ! Le premier lancement peut prendre plusieurs minutes pour télécharger les modèles LLM (~6.4GB au total). Les lancements suivants seront beaucoup plus rapides.
+   
+   > **Note Windows :** Sur Windows, vous devez utiliser **Git Bash** pour exécuter les scripts. Si Git Bash n'est pas installé, le script vous proposera de l'installer automatiquement. Si Docker n'est pas installé, le script vous guidera pour installer Docker Desktop pour Windows.
 
 4. **Ouvrir dans votre navigateur**
    - Allez sur [http://localhost](http://localhost)
@@ -205,3 +286,33 @@ Pour toute question ou problème, consultez le [README technique](README_TECH.md
 ## 🎉 C'est tout !
 
 Vous êtes prêt à utiliser Minuta. Bonne transcription !
+
+
+---
+
+## 📚 Historique des versions
+
+### Version 2.0 - Janvier 2026
+
+**Nouvelles fonctionnalités :**
+- ✏️ Édition du compte rendu généré avant export
+- 🤖 Choix entre deux modèles LLM (Mistral 7B et Llama 3.2 3B)
+- 🚀 Script `start.sh` amélioré avec support multi-plateforme et installation automatique
+- 🗑️ Nouveau script `uninstall.sh` pour désinstallation complète
+- 🪟 Support Windows via Git Bash avec installation automatique
+
+**Améliorations :**
+- Configuration Nginx optimisée pour WebSockets
+- Gestion d'erreurs WebSocket améliorée
+- Interface utilisateur améliorée avec indicateurs visuels
+
+### Version 1.0 - Version initiale
+
+**Fonctionnalités de base :**
+- Enregistrement audio depuis le navigateur
+- Transcription automatique en temps réel (Whisper)
+- Génération de compte rendu via LLM local (Ollama)
+- Export en PDF et TXT
+- Gestion des prompts de compte rendu
+- Support dark/light mode
+

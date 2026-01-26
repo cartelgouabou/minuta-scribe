@@ -16,6 +16,8 @@
   --input-border: #444;
   --summary-bg: #2a2a2a;
   --summary-text: rgba(255, 255, 255, 0.9);
+  --accent-color: #646cff;
+  --accent-rgb: 100, 108, 255;
 
   color: var(--text-primary);
   background-color: var(--bg-primary);
@@ -38,6 +40,8 @@
   --input-border: #ccc;
   --summary-bg: #ffffff;
   --summary-text: #213547;
+  --accent-color: #646cff;
+  --accent-rgb: 100, 108, 255;
   
   color: var(--text-primary);
   background-color: var(--bg-primary);
@@ -96,6 +100,8 @@ button:focus-visible {
   --input-border: #444;
   --summary-bg: #2a2a2a;
   --summary-text: rgba(255, 255, 255, 0.9);
+  --accent-color: #646cff;
+  --accent-rgb: 100, 108, 255;
   
   color: var(--text-primary);
   background-color: var(--bg-primary);
@@ -114,6 +120,8 @@ button:focus-visible {
     --input-border: #ccc;
     --summary-bg: #ffffff;
     --summary-text: #213547;
+    --accent-color: #646cff;
+    --accent-rgb: 100, 108, 255;
     
     color: var(--text-primary);
     background-color: var(--bg-primary);
