@@ -23,11 +23,90 @@
 
 ### Caractéristiques principales
 
-- **Offline-first** : Tout fonctionne localement. La transcription utilise Whisper local et la génération de compte rendu utilise Ollama avec des modèles LLM locaux (Mistral 7B et Llama 3.2 3B)
+- **Offline-first** : Tout fonctionne localement. La transcription utilise Whisper local et la génération de compte rendu utilise Ollama avec des modèles LLM locaux (Mistral 7B et Llama 3.2 3B). Choix du modèle disponible dans l'interface (v2.0)
 - **Temps réel** : Transcription partielle toutes les 15 secondes pendant l'enregistrement
 - **Multi-langues** : Support français et anglais
 - **GPU automatique** : Détection et utilisation automatique du GPU si disponible (CUDA, MPS)
 - **Thème adaptatif** : Support dark/light mode avec toggle manuel
+- **Édition du compte rendu** : Possibilité d'éditer le compte rendu généré avant export (v2.0)
+
+
+## 📦 Version 2.0 - Janvier 2026
+
+### 🎉 Nouvelles fonctionnalités et améliorations
+
+**Version 2.0** apporte des améliorations significatives pour une meilleure expérience utilisateur et une installation simplifiée.
+
+#### ✨ Fonctionnalités ajoutées
+
+1. **Édition du compte rendu**
+   - Interface d'édition intégrée avec `textarea` éditable
+   - Indicateur visuel de modification (`isEdited` state)
+   - Les exports PDF et TXT utilisent automatiquement le texte édité
+   - Gestion d'état séparée : `summary` (original) et `editedSummary` (modifiable)
+
+2. **Choix entre modèles LLM**
+   - Support de deux modèles : Mistral 7B Instruct et Llama 3.2 3B Instruct
+   - Sélection du modèle via dropdown dans l'interface
+   - Téléchargement automatique des deux modèles au démarrage via `start.sh`
+   - Validation côté backend des modèles disponibles
+
+3. **Scripts d'installation et désinstallation améliorés**
+   - **`start.sh`** :
+     - Détection automatique du système d'exploitation (macOS, Linux, Windows)
+     - Installation automatique de Docker (macOS, Ubuntu/Debian)
+     - Installation automatique de Git Bash sur Windows si nécessaire
+     - Téléchargement automatique des modèles LLM (Mistral 7B et Llama 3.2 3B)
+     - Messages d'aide spécifiques par plateforme
+     - Vérification de santé des services Docker
+   
+   - **`uninstall.sh`** :
+     - Désinstallation complète de l'application
+     - Suppression des conteneurs, images, volumes et réseaux Docker
+     - Option de suppression de l'image Ollama
+     - Confirmation avant suppression
+     - Détection automatique du système d'exploitation
+
+#### 🔧 Améliorations techniques
+
+- **Support multi-plateforme** :
+  - Détection Windows via `OSTYPE` et `MSYSTEM`
+  - Support Git Bash exclusif sur Windows (plus de WSL/PowerShell)
+  - Messages d'erreur adaptés par plateforme
+
+- **Configuration Nginx** :
+  - Timeouts WebSocket augmentés (`proxy_read_timeout`, `proxy_send_timeout`)
+  - Configuration optimisée pour les connexions longues
+
+- **Gestion d'erreurs WebSocket** :
+  - Timeout de 3 secondes avant affichage d'erreur
+  - Vérification de l'état de connexion avant affichage
+  - Gestion des fermetures normales vs erreurs
+
+- **Variables CSS** :
+  - Ajout de `--accent-color` et `--accent-rgb` pour cohérence visuelle
+  - Styles pour textarea éditable avec focus states
+
+#### 📝 Changements dans le code
+
+**Frontend** :
+- `SummaryGenerator.tsx` : Ajout de l'état `editedSummary` et `isEdited`
+- `SummaryGenerator.tsx` : Remplacement de `div` par `textarea` éditable
+- `SummaryActions.tsx` : Utilisation de `editedSummary` au lieu de `summary`
+- `AudioRecorder.tsx` : Amélioration de la gestion d'erreurs WebSocket
+- `Meeting.css` : Nouveaux styles pour textarea éditable et indicateur de modification
+- `index.css` : Ajout des variables CSS d'accent
+
+**Backend** :
+- `routes/summary.py` : Validation des modèles LLM disponibles
+- `services/ollama_service.py` : Support de deux modèles (Mistral et Llama)
+
+**Infrastructure** :
+- `docker/nginx.conf` : Configuration WebSocket améliorée
+- `start.sh` : Logique d'installation multi-plateforme
+- `uninstall.sh` : Script de désinstallation complet
+
+---
 
 ---
 
@@ -426,6 +505,13 @@ Response: {
 - **ffmpeg** (conversion audio)
 - **Docker** (optionnel, pour déploiement)
 
+**Support multi-plateforme :**
+- **macOS** : Terminal natif, Docker Desktop
+- **Linux** : Terminal natif, Docker Engine ou Docker Desktop
+- **Windows** : 
+  - **Git Bash** (requis) : Inclus avec Git for Windows, permet d'exécuter les scripts bash. Si Git Bash n'est pas installé, le script `start.sh` vous proposera de l'installer automatiquement
+  - **Docker Desktop pour Windows** : Requis pour exécuter les conteneurs Docker
+
 ### Installation locale
 
 ```bash
@@ -477,8 +563,11 @@ npm run lint
 ### Scripts utiles
 
 ```bash
-# Script de démarrage rapide
+# Script de démarrage rapide (fonctionne sur Mac, Linux et Windows via Git Bash)
 ./start.sh
+
+# Script de désinstallation (fonctionne sur Mac, Linux et Windows via Git Bash)
+./uninstall.sh
 
 # Formatage code (si black est installé)
 cd backend
@@ -486,6 +575,8 @@ source venv/bin/activate  # Sur Windows: venv\Scripts\activate
 black app/  # Si black est installé: pip install black
 cd ../frontend && npm run lint -- --fix
 ```
+
+**Note Windows :** Les scripts `start.sh` et `uninstall.sh` sont des scripts bash et nécessitent Git Bash pour être exécutés sur Windows. Si Git Bash n'est pas installé, le script `start.sh` vous proposera de l'installer automatiquement. Les scripts ne fonctionnent pas directement dans PowerShell ou l'Invite de commandes Windows.
 
 ---
 
@@ -598,6 +689,7 @@ docker-compose -f docker-compose.prod.yml up -d
 **Prérequis système :**
 - RAM : Au moins 8GB recommandés (16GB pour de meilleures performances)
 - Espace disque : ~10-15GB pour les modèles LLM et les images Docker
+- **Windows** : Git Bash (inclus avec Git for Windows) pour exécuter les scripts bash. Si Git Bash n'est pas installé, le script `start.sh` vous proposera de l'installer automatiquement
 
 ---
 
@@ -664,4 +756,4 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ---
 
-**Dernière mise à jour :** 2024
+**Dernière mise à jour :** Janvier 2026 (Version 2.0)

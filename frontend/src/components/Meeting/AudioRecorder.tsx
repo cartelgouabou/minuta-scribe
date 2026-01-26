@@ -46,7 +46,16 @@ function AudioRecorder({
       const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/transcribe`)
       websocketRef.current = ws
 
+      // Utiliser un timeout pour détecter les vraies erreurs de connexion
+      let connectionTimeout: ReturnType<typeof setTimeout> | null = null
+      let connectionEstablished = false
+
       ws.onopen = () => {
+        connectionEstablished = true
+        if (connectionTimeout) {
+          clearTimeout(connectionTimeout)
+          connectionTimeout = null
+        }
         // Envoyer la langue sélectionnée
         ws.send(JSON.stringify({ language }))
         mediaRecorder.start(100) // Envoyer des chunks toutes les 100ms
@@ -56,6 +65,17 @@ function AudioRecorder({
         onTranscriptionUpdate('') // Réinitialiser la transcription dans l'UI
         onRecordingStart()
       }
+
+      // Détecter les vraies erreurs de connexion avec un délai
+      connectionTimeout = setTimeout(() => {
+        if (!connectionEstablished && ws.readyState !== WebSocket.OPEN) {
+          setError('Erreur de connexion WebSocket. Vérifiez que le serveur est démarré.')
+          setIsRecording(false)
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop())
+          }
+        }
+      }, 3000) // Attendre 3 secondes avant d'afficher l'erreur
 
       ws.onmessage = (event) => {
         try {
@@ -105,7 +125,26 @@ function AudioRecorder({
 
       ws.onerror = (error) => {
         console.error('WebSocket error:', error)
-        setError('Erreur de connexion WebSocket')
+        // Ne pas afficher l'erreur immédiatement, attendre le timeout
+        // ou vérifier si la connexion est vraiment fermée
+        if (ws.readyState === WebSocket.CLOSED && !connectionEstablished) {
+          setError('Erreur de connexion WebSocket. Vérifiez que le serveur est démarré.')
+          setIsRecording(false)
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop())
+          }
+        }
+      }
+
+      ws.onclose = (event) => {
+        if (connectionTimeout) {
+          clearTimeout(connectionTimeout)
+          connectionTimeout = null
+        }
+        // Ne pas afficher d'erreur si la fermeture est normale (code 1000)
+        if (event.code !== 1000 && event.code !== 1001 && !connectionEstablished) {
+          setError('Connexion WebSocket fermée. Réessayez.')
+        }
       }
 
       mediaRecorder.ondataavailable = (event) => {
