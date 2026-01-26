@@ -12,6 +12,8 @@ Minuta est un outil qui :
 
 Tout fonctionne **localement** sur votre ordinateur, y compris la génération du compte rendu via Ollama avec des modèles LLM locaux.
 
+> **💡 Installation simple :** Utilisez `./start.sh` pour installer et lancer l'application. Utilisez `./uninstall.sh` pour désinstaller complètement.
+
 ## ✨ Fonctionnalités principales
 
 ### Page Meeting
@@ -29,11 +31,7 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
 
 ## 🚀 Installation rapide
 
-### Avec Docker (Recommandé - Le plus simple)
-
-**Prérequis :** Docker et Docker Compose installés sur votre ordinateur.
-
-> 💡 **Astuce :** Si Docker n'est pas installé, vous pouvez utiliser le script `start.sh` qui vérifiera et vous proposera de l'installer automatiquement.
+### Installation en 3 étapes simples
 
 1. **Télécharger le projet**
    ```bash
@@ -47,7 +45,7 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
    > cd minuta-scribe
    > ```
 
-2. **Rendre les scripts exécutables (si nécessaire)**
+2. **Rendre les scripts exécutables**
    
    Sur Linux et macOS, vous devez rendre les scripts exécutables :
    ```bash
@@ -56,44 +54,39 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
    
    > **Note :** Cette étape n'est nécessaire qu'une seule fois après le clonage du projet. Sur Windows avec Git Bash, les scripts sont généralement déjà exécutables.
 
-3. **Lancer l'application**
-   
-   **Option A : Utiliser le script automatique (recommandé)**
+3. **Lancer l'application avec le script automatique**
    ```bash
    ./start.sh
    ```
-   Le script vérifiera Docker, vous proposera de l'installer si nécessaire, puis lancera l'application avec Ollama.
    
-   > **Note :** Aucune configuration manuelle n'est nécessaire ! Les modèles LLM (Mistral 7B et Llama 3.2 3B) sont automatiquement téléchargés au démarrage.
+   Le script `start.sh` va automatiquement :
+   - ✅ Vérifier si Docker est installé (et vous proposer de l'installer si nécessaire)
+   - ✅ Vérifier que Docker fonctionne correctement
+   - ✅ Construire et lancer tous les conteneurs Docker
+   - ✅ Télécharger les modèles LLM (Mistral 7B et Llama 3.2 3B)
+   - ✅ Préparer l'application pour l'utilisation
    
-   **Option B : Lancer manuellement**
-   ```bash
-   cd docker
-   docker-compose up --build
-   ```
-   
-   > **Note :** Le premier lancement peut prendre plusieurs minutes pour télécharger les modèles LLM (~6.4GB au total). Les lancements suivants seront beaucoup plus rapides.
+   > **Note :** Aucune configuration manuelle n'est nécessaire ! Le premier lancement peut prendre plusieurs minutes pour télécharger les modèles LLM (~6.4GB au total). Les lancements suivants seront beaucoup plus rapides.
 
-4. **Désinstaller l'application (optionnel)**
-   
-   Si vous souhaitez supprimer complètement Minuta de votre système :
-   ```bash
-   ./uninstall.sh
-   ```
-   
-   Cette commande va :
-   - Détecter automatiquement si l'application est en cours d'exécution
-   - Arrêter et supprimer tous les conteneurs Minuta
-   - Supprimer toutes les images Docker de Minuta
-   - Supprimer tous les volumes (données backend + modèles LLM Ollama)
-   - Supprimer le réseau Docker Minuta
-   - Libérer environ 10-15 GB d'espace disque
-   
-   > **Note :** Vous devrez confirmer la désinstallation en tapant "oui". L'image Ollama ne sera supprimée que si vous le confirmez (elle peut être utilisée par d'autres projets). Le script fonctionne même si l'application tourne en arrière-plan.
-
-5. **Ouvrir dans votre navigateur**
+4. **Ouvrir dans votre navigateur**
    - Allez sur [http://localhost](http://localhost)
    - L'application est prête !
+
+## 🗑️ Désinstallation
+
+Pour désinstaller complètement Minuta de votre système, utilisez le script `uninstall.sh` :
+
+```bash
+./uninstall.sh
+```
+
+Le script `uninstall.sh` va automatiquement :
+- ✅ Détecter si l'application est en cours d'exécution
+- ✅ Arrêter tous les conteneurs Minuta
+- ✅ Supprimer tous les conteneurs, images, volumes et réseaux Docker liés à Minuta
+- ✅ Libérer environ 10-15 GB d'espace disque
+
+> **Note :** Vous devrez confirmer la désinstallation en tapant "oui". L'image Ollama ne sera supprimée que si vous le confirmez (elle peut être utilisée par d'autres projets). Le script fonctionne même si l'application tourne en arrière-plan.
 
 ## 📸 Aperçu de l'interface
 
@@ -182,17 +175,15 @@ chmod +x start.sh uninstall.sh
 
 ### L'application ne démarre pas
 **Solution :**
-- Vérifiez que tous les prérequis sont installés (Docker, Docker Compose)
+- Utilisez le script `./start.sh` qui vérifie automatiquement tous les prérequis
 - Vérifiez que les ports 80 (frontend), 8000 (backend) et 11434 (Ollama) ne sont pas utilisés
-- Consultez les messages d'erreur dans les terminaux
+- Consultez les messages d'erreur affichés par le script
 - Assurez-vous d'avoir au moins 8GB de RAM disponible pour les modèles LLM
+- Si Docker n'est pas installé, le script `start.sh` vous proposera de l'installer automatiquement
 
 ### Désinstaller complètement l'application
 **Solution :**
-```bash
-./uninstall.sh
-```
-Cette commande supprimera tous les conteneurs, images, volumes et réseaux Docker liés à Minuta, libérant environ 10-15 GB d'espace disque. Le script détecte automatiquement si l'application est en cours d'exécution et l'arrête avant de procéder à la désinstallation.
+Utilisez le script `./uninstall.sh` qui supprimera automatiquement tous les éléments Docker liés à Minuta. Voir la section [Désinstallation](#-désinstallation) ci-dessus pour plus de détails.
 
 ## 📞 Support
 
