@@ -12,12 +12,16 @@ services:
       - ../backend/.env
     environment:
       - DATABASE_URL=sqlite:///./data/minuta.db
+      - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
       - backend_data:/app/backend/data
       # Volume pour développement (commenter en production)
       # - ../backend:/app/backend
     networks:
       - minuta-network
+    depends_on:
+      ollama:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
@@ -40,8 +44,27 @@ services:
       - minuta-network
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: minuta-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - minuta-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
 volumes:
   backend_data:
+    driver: local
+  ollama_data:
     driver: local
 
 networks:

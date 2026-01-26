@@ -199,53 +199,6 @@ else
 fi
 
 echo ""
-
-# Vérifier le fichier .env
-info "Vérification de la configuration..."
-
-if [ ! -f "backend/.env" ]; then
-    warning "Le fichier backend/.env n'existe pas."
-    
-    if [ -f "backend/env.example" ]; then
-        info "Création du fichier .env à partir de env.example..."
-        cp backend/env.example backend/.env
-        warning "⚠️  IMPORTANT: Éditez backend/.env et ajoutez votre clé GROQ_API_KEY"
-        echo "   Obtenez votre clé sur: https://console.groq.com/"
-        echo ""
-        read -p "Voulez-vous continuer sans configurer la clé API maintenant? (y/N) " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            info "Ouvrez backend/.env dans un éditeur et ajoutez votre GROQ_API_KEY"
-            echo "   Puis relancez ce script avec: ./start.sh"
-            exit 0
-        fi
-    else
-        error "Le fichier env.example n'existe pas."
-        echo "   Créez manuellement backend/.env avec: GROQ_API_KEY=your-key-here"
-        exit 1
-    fi
-else
-    success "Le fichier backend/.env existe"
-    
-    # Vérifier si GROQ_API_KEY est défini
-    if ! grep -q "GROQ_API_KEY=.*[^your-groq-api-key-here]" backend/.env 2>/dev/null; then
-        if grep -q "GROQ_API_KEY=your-groq-api-key-here" backend/.env 2>/dev/null; then
-            warning "GROQ_API_KEY n'est pas configuré dans backend/.env"
-            echo "   Éditez backend/.env et remplacez 'your-groq-api-key-here' par votre vraie clé API"
-            echo "   Obtenez votre clé sur: https://console.groq.com/"
-            echo ""
-            read -p "Voulez-vous continuer quand même? (y/N) " -n 1 -r
-            echo ""
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                exit 0
-            fi
-        fi
-    else
-        success "GROQ_API_KEY est configuré"
-    fi
-fi
-
-echo ""
 success "Tout est prêt !"
 echo ""
 
@@ -273,13 +226,57 @@ info "Construction et démarrage des conteneurs..."
 echo "   Cela peut prendre quelques minutes la première fois..."
 echo ""
 
-if $DOCKER_COMPOSE_CMD up --build; then
+# Lancer les conteneurs en arrière-plan
+if $DOCKER_COMPOSE_CMD up -d --build; then
+    success "Conteneurs démarrés !"
+    echo ""
+    
+    # Attendre que Ollama soit prêt
+    info "Attente que le service Ollama soit prêt..."
+    MAX_WAIT=60
+    WAIT_COUNT=0
+    while ! docker exec minuta-ollama ollama list &> /dev/null; do
+        if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
+            warning "Timeout en attendant Ollama. Les modèles seront téléchargés au premier usage."
+            break
+        fi
+        sleep 2
+        WAIT_COUNT=$((WAIT_COUNT + 2))
+        echo -n "."
+    done
+    echo ""
+    
+    # Télécharger les modèles LLM
+    info "Téléchargement des modèles LLM..."
+    echo "   Cela peut prendre plusieurs minutes selon votre connexion..."
+    echo ""
+    
+    info "Téléchargement de Mistral 7B Instruct (4.4 GB)..."
+    if docker exec minuta-ollama ollama pull mistral:7b-instruct; then
+        success "Mistral 7B Instruct téléchargé !"
+    else
+        warning "Erreur lors du téléchargement de Mistral. Le modèle sera téléchargé au premier usage."
+    fi
+    echo ""
+    
+    info "Téléchargement de Llama 3.2 3B Instruct (2.0 GB)..."
+    if docker exec minuta-ollama ollama pull llama3.2:3b; then
+        success "Llama 3.2 3B Instruct téléchargé !"
+    else
+        warning "Erreur lors du téléchargement de Llama. Le modèle sera téléchargé au premier usage."
+    fi
+    echo ""
+    
     success "Application lancée !"
     echo ""
     info "L'application est accessible sur: http://localhost"
     echo ""
-    info "Pour arrêter l'application, appuyez sur Ctrl+C"
-    echo "Pour lancer en arrière-plan: cd docker && $DOCKER_COMPOSE_CMD up -d --build"
+    info "Modèles LLM disponibles :"
+    echo "   - Mistral 7B Instruct"
+    echo "   - Llama 3.2 3B Instruct"
+    echo ""
+    info "Pour voir les logs: cd docker && $DOCKER_COMPOSE_CMD logs -f"
+    info "Pour arrêter l'application: cd docker && $DOCKER_COMPOSE_CMD down"
 else
     error "Erreur lors du lancement de l'application"
     echo "   Vérifiez les messages d'erreur ci-dessus"

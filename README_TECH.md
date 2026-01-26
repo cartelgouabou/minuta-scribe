@@ -23,7 +23,7 @@
 
 ### Caractéristiques principales
 
-- **Offline-first** : La transcription se fait localement via Whisper, seule la génération de compte rendu nécessite une connexion cloud
+- **Offline-first** : Tout fonctionne localement. La transcription utilise Whisper local et la génération de compte rendu utilise Ollama avec des modèles LLM locaux (Mistral 7B et Llama 3.2 3B)
 - **Temps réel** : Transcription partielle toutes les 15 secondes pendant l'enregistrement
 - **Multi-langues** : Support français et anglais
 - **GPU automatique** : Détection et utilisation automatique du GPU si disponible (CUDA, MPS)
@@ -62,9 +62,23 @@
 │  │         │                  │              │          │  │
 │  │         ▼                  ▼              ▼          │  │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │  │
-│  │  │   Whisper    │  │   Groq API   │  │  SQLite     │ │  │
+│  │  │   Whisper    │  │   Ollama     │  │  SQLite     │ │  │
 │  │  │   Service    │  │   Service    │  │  Database   │ │  │
 │  │  └──────────────┘  └──────────────┘  └────────────┘ │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Ollama (Docker)                          │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              Ollama Server                            │  │
+│  │  ┌──────────────┐  ┌──────────────┐                   │  │
+│  │  │   Mistral    │  │    Llama     │                   │  │
+│  │  │   7B Inst    │  │  3.2 3B Inst │                   │  │
+│  │  └──────────────┘  └──────────────┘                   │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -110,7 +124,7 @@ backend/app/
 │   └── summary.py                    # Route génération compte rendu
 └── services/
     ├── whisper_service.py            # Service transcription Whisper
-    └── groq_service.py               # Service génération LLM Groq
+    └── ollama_service.py            # Service génération LLM Ollama
 ```
 
 ---
@@ -137,7 +151,7 @@ backend/app/
 | SQLAlchemy | 2.0.23 | ORM |
 | SQLite | - | Base de données |
 | Whisper | 20231117 | Transcription audio |
-| Groq | 0.4.0 | Client API LLM |
+| OpenAI | 1.0.0+ | Client API OpenAI-compatible (pour Ollama) |
 | Poetry | - | Gestion dépendances |
 
 ### Infrastructure
@@ -148,6 +162,7 @@ backend/app/
 | Docker Compose | Orchestration |
 | Nginx | Reverse proxy (production) |
 | ffmpeg | Conversion audio |
+| Ollama | Serveur LLM local avec téléchargement automatique des modèles |
 
 ---
 
@@ -187,7 +202,7 @@ minuta-scribe/
 │   │   │   └── summary.py            # Génération compte rendu
 │   │   └── services/                # Services métier
 │   │       ├── whisper_service.py    # Transcription
-│   │       └── groq_service.py       # LLM
+│   │       └── ollama_service.py     # LLM
 │   ├── pyproject.toml                # Config Poetry
 │   ├── env.example                   # Exemple variables env
 │   └── minuta.db                     # Base SQLite (généré)
@@ -266,20 +281,23 @@ minuta-scribe/
 ┌─────────────────────┐
 │  SummaryGenerator   │
 │  - Select prompt    │
+│  - Select model     │
 │  - Get transcription│
 └──────┬──────────────┘
-       │ 1. POST /api/summary/generate
+       │ 1. POST /api/generate-summary
+       │    {prompt_id, transcription, model}
        ▼
 ┌─────────────────────┐
 │  FastAPI Route      │
-│  (/api/summary/...) │
+│  (/api/generate-...)│
 └──────┬──────────────┘
        │ 2. Get prompt from DB
        ▼
 ┌─────────────────────┐
-│  GroqService        │
-│  - Call Groq API    │
-│  - Model: llama-3.1 │
+│  OllamaService      │
+│  - Call Ollama API  │
+│  - Model: mistral   │
+│    or llama3.2      │
 └──────┬──────────────┘
        │ 3. Return summary
        ▼
@@ -380,17 +398,22 @@ Response: [
 ]
 ```
 
-**POST /api/summary/generate**
+**POST /api/generate-summary**
 ```json
 Request: {
   "prompt_id": 1,
-  "transcription": "Transcription text..."
+  "transcription": "Transcription text...",
+  "model": "mistral:7b-instruct"
 }
 
 Response: {
   "summary": "Compte rendu généré..."
 }
 ```
+
+**Modèles disponibles :**
+- `mistral:7b-instruct` : Mistral 7B Instruct (par défaut, 4.4 GB)
+- `llama3.2:3b` : Llama 3.2 3B Instruct (2.0 GB)
 
 ---
 
@@ -416,7 +439,8 @@ python3 -m venv venv
 source venv/bin/activate  # Sur Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp env.example .env
-# Éditer .env avec votre GROQ_API_KEY
+# Pour développement local, configurer OLLAMA_BASE_URL=http://localhost:11434
+# si Ollama tourne localement, sinon utiliser Docker Compose
 
 # Frontend
 cd ../frontend
@@ -471,14 +495,13 @@ cd ../frontend && npm run lint -- --fix
 
 **Backend (.env) :**
 ```env
-GROQ_API_KEY=your-groq-api-key-here
+# URL de Ollama (optionnel, valeur par défaut dans Docker: http://ollama:11434)
+# OLLAMA_BASE_URL=http://ollama:11434
 DATABASE_URL=sqlite:///./minuta.db
 ```
 
-**Docker (docker/.env) :**
-```env
-GROQ_API_KEY=your-groq-api-key-here
-```
+**Docker :**
+Les variables d'environnement sont configurées automatiquement dans `docker-compose.yml`. Aucune configuration manuelle requise.
 
 ### Configuration Whisper
 
@@ -491,11 +514,15 @@ Options disponibles dans `backend/app/services/whisper_service.py` :
 - `medium` : Plus lent, plus précis
 - `large` : Très lent, très précis
 
-### Configuration Groq
+### Configuration Ollama
 
-Modèle utilisé : `llama-3.1-8b-instant`
+Modèles disponibles :
+- `mistral:7b-instruct` : Mistral 7B Instruct (par défaut, 4.4 GB)
+- `llama3.2:3b` : Llama 3.2 3B Instruct (2.0 GB)
 
-Modifiable dans `backend/app/services/groq_service.py`
+Les modèles sont automatiquement téléchargés au démarrage via le script `start.sh`. Si les modèles ne sont pas disponibles, ils seront téléchargés au premier usage. Pour télécharger manuellement, on peut exécuter `docker exec minuta-ollama ollama pull mistral:7b-instruct` et `docker exec minuta-ollama ollama pull llama3.2:3b`.
+
+Configuration modifiable dans `backend/app/services/ollama_service.py`
 
 ---
 
@@ -551,23 +578,26 @@ poetry run pytest --cov=app tests/
 
 **Build et lancement :**
 ```bash
-# S'assurer que backend/.env existe avec GROQ_API_KEY
 cd docker
 docker-compose up --build
 ```
+
+> **Note :** Aucune configuration manuelle requise ! Les modèles LLM sont automatiquement téléchargés au démarrage via le script `start.sh`. Le premier téléchargement peut prendre plusieurs minutes (~6.4GB au total).
 
 **Production :**
 ```bash
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-> **Note :** Docker Compose utilise automatiquement le fichier `../backend/.env` grâce à la directive `env_file` dans `docker-compose.yml`. Assurez-vous que ce fichier existe et contient votre `GROQ_API_KEY`.
-
 ### Variables d'environnement production
 
-- `GROQ_API_KEY` : Requis
+- `OLLAMA_BASE_URL` : Optionnel (défaut: `http://ollama:11434`)
 - `DATABASE_URL` : Optionnel (SQLite par défaut)
 - `CORS_ORIGINS` : Origines autorisées
+
+**Prérequis système :**
+- RAM : Au moins 8GB recommandés (16GB pour de meilleures performances)
+- Espace disque : ~10-15GB pour les modèles LLM et les images Docker
 
 ---
 
@@ -600,7 +630,11 @@ docker-compose -f docker-compose.prod.yml up -d
 2. **Navigateurs** : Chrome/Edge recommandés
 3. **Performance** : Transcription peut être lente selon CPU
 4. **Stockage** : Pas de persistance des transcriptions/comptes rendus (volontaire)
-5. **Taille Docker** : Image backend ~2-3GB (Whisper)
+5. **Taille Docker** : 
+   - Image backend ~2-3GB (Whisper)
+   - Image Ollama ~2GB (base, modèles téléchargés séparément)
+   - Modèles LLM : ~6.4GB (Mistral 4.4GB + Llama 3.2 3B 2.0GB, téléchargés automatiquement au démarrage)
+   - Total initial : ~4-5GB, puis ~10-15GB après téléchargement des modèles
 
 ### Améliorations prévues
 
@@ -618,7 +652,8 @@ docker-compose -f docker-compose.prod.yml up -d
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Whisper Documentation](https://github.com/openai/whisper)
-- [Groq API Documentation](https://console.groq.com/docs)
+- [Ollama Documentation](https://ollama.ai/)
+- [Ollama API Documentation](https://github.com/ollama/ollama/blob/main/docs/api.md)
 - [React Documentation](https://react.dev/)
 
 ---

@@ -10,7 +10,7 @@ Minuta est un outil qui :
 - **Génère** un compte rendu professionnel grâce à l'intelligence artificielle
 - **Exporte** le résultat en PDF ou texte
 
-Tout fonctionne **localement** sur votre ordinateur (sauf la génération du compte rendu qui utilise une API cloud).
+Tout fonctionne **localement** sur votre ordinateur, y compris la génération du compte rendu via Ollama avec des modèles LLM locaux.
 
 ## ✨ Fonctionnalités principales
 
@@ -47,29 +47,15 @@ Tout fonctionne **localement** sur votre ordinateur (sauf la génération du com
    > cd minuta-scribe
    > ```
 
-2. **Créer votre clé API Groq**
-   - Allez sur [https://console.groq.com/](https://console.groq.com/)
-   - Créez un compte gratuit
-   - Générez une clé API
-   - Copiez la clé
-
-3. **Configurer l'application**
-   
-   Créez le fichier `.env` dans le dossier `backend/` :
-   ```bash
-   cd backend
-   cp env.example .env
-   # Éditez .env et ajoutez votre clé API Groq
-   # GROQ_API_KEY=votre-clé-api-ici
-   ```
-
-4. **Lancer l'application**
+2. **Lancer l'application**
    
    **Option A : Utiliser le script automatique (recommandé)**
    ```bash
    ./start.sh
    ```
-   Le script vérifiera Docker, vous proposera de l'installer si nécessaire, puis lancera l'application.
+   Le script vérifiera Docker, vous proposera de l'installer si nécessaire, puis lancera l'application avec Ollama.
+   
+   > **Note :** Aucune configuration manuelle n'est nécessaire ! Les modèles LLM (Mistral 7B et Llama 3.2 3B) sont automatiquement téléchargés au démarrage.
    
    **Option B : Lancer manuellement**
    ```bash
@@ -77,9 +63,9 @@ Tout fonctionne **localement** sur votre ordinateur (sauf la génération du com
    docker-compose up --build
    ```
    
-   > **Note :** Docker Compose utilisera automatiquement le fichier `backend/.env` pour les variables d'environnement.
+   > **Note :** Le premier lancement peut prendre plusieurs minutes pour télécharger les modèles LLM (~6.4GB au total). Les lancements suivants seront beaucoup plus rapides.
 
-5. **Ouvrir dans votre navigateur**
+3. **Ouvrir dans votre navigateur**
    - Allez sur [http://localhost](http://localhost)
    - L'application est prête !
 
@@ -127,9 +113,10 @@ Tout fonctionne **localement** sur votre ordinateur (sauf la génération du com
 ### 3. Générer le compte rendu
 
 1. Sélectionnez un prompt (modèle de compte rendu)
-2. Cliquez sur **"Générer le compte rendu"**
-3. Attendez quelques secondes
-4. Le compte rendu apparaît en dessous
+2. Choisissez le modèle LLM (Mistral 7B ou Llama 3.2 3B)
+3. Cliquez sur **"Générer le compte rendu"**
+4. Attendez quelques secondes (la première génération peut prendre plus de temps)
+5. Le compte rendu apparaît en dessous
 
 ### 4. Exporter ou copier
 
@@ -146,8 +133,8 @@ Cliquez sur l'icône ☀️/🌙 en haut à droite pour basculer entre le thème
 ### "ffmpeg not found"
 **Solution :** Installez ffmpeg sur votre système (voir prérequis ci-dessus).
 
-### "GROQ_API_KEY not set"
-**Solution :** Vérifiez que le fichier `.env` existe dans le dossier `backend/` et contient votre clé API.
+### "Ollama n'est pas accessible"
+**Solution :** Vérifiez que le service Ollama est démarré. Les modèles sont téléchargés automatiquement au démarrage via le script `start.sh`. Si les modèles ne sont pas disponibles, ils seront téléchargés au premier usage.
 
 ### Le microphone ne fonctionne pas
 **Solution :** 
@@ -163,9 +150,10 @@ Cliquez sur l'icône ☀️/🌙 en haut à droite pour basculer entre le thème
 
 ### L'application ne démarre pas
 **Solution :**
-- Vérifiez que tous les prérequis sont installés
-- Vérifiez que les ports 8000 (backend) et 5173 (frontend) ne sont pas utilisés
+- Vérifiez que tous les prérequis sont installés (Docker, Docker Compose)
+- Vérifiez que les ports 80 (frontend), 8000 (backend) et 11434 (Ollama) ne sont pas utilisés
 - Consultez les messages d'erreur dans les terminaux
+- Assurez-vous d'avoir au moins 8GB de RAM disponible pour les modèles LLM
 
 ## 📞 Support
 
@@ -173,11 +161,15 @@ Pour toute question ou problème, consultez le [README technique](README_TECH.md
 
 ## 📝 Notes importantes
 
-- **Confidentialité** : La transcription se fait localement sur votre ordinateur. Seule la génération du compte rendu utilise une API cloud (Groq).
+- **Confidentialité** : Tout fonctionne localement sur votre ordinateur. Aucune donnée n'est envoyée vers des services cloud. La transcription utilise Whisper local et la génération de compte rendu utilise Ollama avec des modèles LLM locaux (Mistral 7B et Llama 3.2 3B).
 - **Navigateurs recommandés** : Chrome ou Edge pour la meilleure expérience
+- **Modèles LLM disponibles** : Vous pouvez choisir entre Mistral 7B Instruct et Llama 3.2 3B Instruct dans l'interface lors de la génération du compte rendu. Les deux modèles sont automatiquement téléchargés au démarrage via le script `start.sh`.
 - **Performance** : 
-  - ⏱️ **Premier lancement** : Lors du premier lancement de l'application, la première transcription peut prendre un peu de temps (30 secondes à quelques minutes) car le modèle Whisper doit être chargé en mémoire. C'est normal, soyez patient !
-  - ⚡ **Lancements suivants** : Une fois le modèle chargé, les transcriptions suivantes sont beaucoup plus rapides car le modèle reste en mémoire.
+  - ⏱️ **Premier lancement** : Lors du premier lancement, le téléchargement des modèles LLM peut prendre plusieurs minutes (~6.4GB au total : Mistral 4.4GB + Llama 2.0GB). La première transcription peut aussi prendre 30 secondes à quelques minutes car le modèle Whisper doit être chargé en mémoire. C'est normal, soyez patient !
+  - ⚡ **Lancements suivants** : Une fois les modèles chargés, les transcriptions et générations de compte rendu sont beaucoup plus rapides.
+- **Prérequis système** : 
+  - RAM : Au moins 8GB recommandés (16GB pour de meilleures performances)
+  - Espace disque : ~10-15GB pour les modèles LLM et les images Docker
 - **Stockage** : Les transcriptions ne sont pas sauvegardées automatiquement. Exportez-les si vous voulez les conserver.
 
 ## 🎉 C'est tout !

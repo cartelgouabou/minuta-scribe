@@ -43,6 +43,14 @@ function TranscriptionView({
   // Afficher le spinner seulement si on est en train d'enregistrer OU si on vient de terminer
   // l'enregistrement et qu'on attend encore la transcription finale
   const showLoading = isRecording || (wasRecording && !transcription)
+  
+  // Déterminer le placeholder selon l'état
+  const getPlaceholder = () => {
+    if (transcription) {
+      return "Éditez la transcription ici"
+    }
+    return "Lancer l'enregistrement pour générer une transcription"
+  }
 
   return (
     <div className="transcription-view">
@@ -59,7 +67,7 @@ function TranscriptionView({
           value={editableText}
           onChange={handleChange}
           readOnly={false}
-          placeholder="Éditez la transcription ici"
+          placeholder={getPlaceholder()}
           rows={10}
           style={{ 
             width: '100%', 
