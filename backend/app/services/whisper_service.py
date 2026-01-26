@@ -32,11 +32,20 @@ class WhisperService:
         return device
 
     def load_model(self):
-        """Charge le modèle Whisper (lazy loading)"""
+        """Charge le modèle Whisper (lazy loading avec cache)"""
         if self.model is None:
             print(f"Chargement du modèle Whisper: {self.model_size} sur {self.device}")
             self.model = whisper.load_model(self.model_size, device=self.device)
             print(f"Modèle Whisper chargé avec succès sur {self.device}")
+    
+    def preload_model(self):
+        """Précharge le modèle au démarrage pour éviter le délai lors de la première transcription"""
+        if self.model is None:
+            print(f"Préchargement du modèle Whisper: {self.model_size} sur {self.device}")
+            self.load_model()
+            print(f"✅ Modèle Whisper préchargé et prêt à l'emploi")
+        else:
+            print(f"✅ Modèle Whisper déjà chargé")
 
     def convert_webm_to_wav(self, webm_data: bytes) -> bytes:
         """
@@ -170,7 +179,7 @@ class WhisperService:
             wav_path = wav_file.name
             
             try:
-                # Transcrire avec Whisper avec des paramètres optimisés
+                # Transcrire avec Whisper avec des paramètres optimisés pour la vitesse
                 print(f"Transcription Whisper du fichier WAV (langue: {language or 'auto'})...")
                 result_text = self.model.transcribe(
                     wav_path, 
@@ -178,8 +187,8 @@ class WhisperService:
                     verbose=True,
                     task="transcribe",  # Forcer la transcription (pas la traduction)
                     temperature=0.0,  # Réduire la température pour plus de précision
-                    best_of=2,  # Essayer 2 variantes et prendre la meilleure
-                    beam_size=5,  # Augmenter la taille du beam search pour plus de précision
+                    best_of=1,  # Réduit à 1 pour améliorer la vitesse (au lieu de 2)
+                    beam_size=3,  # Réduit à 3 pour améliorer la vitesse (au lieu de 5)
                 )
                 text = result_text["text"].strip()
                 print(f"Transcription réussie: {len(text)} caractères")

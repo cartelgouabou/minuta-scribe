@@ -38,7 +38,7 @@ function Meeting() {
         setTranscription={setTranscription}
         isRecording={isRecording}
       />
-      {!isRecording && transcription && (
+      {transcription && transcription.trim() && (
         <SummaryGenerator transcription={transcription} />
       )}
     </div>

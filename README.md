@@ -61,6 +61,8 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
 ### Page Meeting
 - 🎤 Enregistrement audio depuis votre navigateur
 - 📝 Transcription automatique en temps réel (français ou anglais)
+  - ⚡ **Transcriptions partielles** : Affichage progressif pendant l'enregistrement (nouveau en v2.1)
+- 📋 **Collage de transcription externe** : Collez une transcription depuis une autre application (nouveau en v2.1)
 - ✏️ Édition de la transcription avant génération
 - 🤖 Génération de compte rendu via IA avec choix du modèle (Mistral 7B ou Llama 3.2 3B)
 - ✏️ **Édition du compte rendu généré** avant export (nouveau en v2.0)
@@ -205,10 +207,13 @@ Le script `uninstall.sh` va automatiquement :
 
 ### 2. Éditer la transcription
 
-1. La transcription apparaît automatiquement après l'arrêt de l'enregistrement
-   > 💡 **Note** : Lors du premier lancement de l'application, la transcription peut prendre 30 secondes à quelques minutes car le modèle Whisper doit être chargé. Les transcriptions suivantes seront beaucoup plus rapides.
-2. Vous pouvez modifier le texte directement dans la zone de texte
-3. Corrigez les erreurs si nécessaire
+1. La transcription apparaît automatiquement :
+   - **Pendant l'enregistrement** : Des transcriptions partielles s'affichent toutes les 3 secondes (nouveau en v2.1)
+   - **Après l'arrêt** : La transcription finale remplace les transcriptions partielles
+   > 💡 **Note** : Le modèle Whisper est préchargé au démarrage, donc la première transcription est rapide. Les transcriptions partielles permettent de voir le texte en temps réel pendant l'enregistrement.
+2. **Alternative** : Vous pouvez aussi coller une transcription depuis une autre application directement dans le champ de texte, même sans avoir fait d'enregistrement
+3. Vous pouvez modifier le texte directement dans la zone de texte
+4. Corrigez les erreurs si nécessaire
 
 ### 3. Générer le compte rendu
 
@@ -291,6 +296,24 @@ Vous êtes prêt à utiliser Minuta. Bonne transcription !
 ---
 
 ## 📚 Historique des versions
+
+### Version 2.1 - 26 janvier 2026
+
+**Nouvelles fonctionnalités :**
+- 📋 **Collage de transcription externe** : Vous pouvez maintenant coller une transcription depuis une autre application directement dans le champ de transcription, même sans avoir fait d'enregistrement. Le générateur de compte rendu s'affiche automatiquement dès qu'il y a du texte.
+- ⚡ **Transcriptions partielles en temps réel** : La transcription s'affiche progressivement pendant l'enregistrement (toutes les 3 secondes) au lieu d'attendre la fin de l'enregistrement. Cela améliore considérablement l'expérience utilisateur.
+- 🚀 **Optimisations de performance** :
+  - Préchargement du modèle Whisper au démarrage de l'application pour éviter les délais
+  - Paramètres Whisper optimisés pour une transcription plus rapide
+  - Thread pool pour les transcriptions afin de ne pas bloquer le WebSocket
+
+**Corrections :**
+- 🐛 **Correction de la duplication du dernier mot** : Amélioration de la logique de fusion des transcriptions partielles pour éviter les répétitions de mots en fin de transcription
+
+**Améliorations techniques :**
+- Backend : Implémentation de transcriptions partielles asynchrones avec ThreadPoolExecutor
+- Frontend : Nouvelle fonction de détection de chevauchement de texte pour une fusion intelligente des transcriptions partielles
+- Backend : Préchargement automatique du modèle Whisper au démarrage
 
 ### Version 2.0 - Janvier 2026
 

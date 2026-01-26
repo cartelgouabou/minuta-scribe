@@ -2,6 +2,9 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import os
+import asyncio
+import time
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 
 from app.db.database import init_db
@@ -18,6 +21,11 @@ print("📦 Initialisation de la base de données...")
 init_db()
 print("🌱 Seed des prompts par défaut...")
 seed_prompts()
+
+# Service Whisper (singleton) - créé avant l'app pour précharger le modèle
+whisper_service = WhisperService()
+print("🤖 Préchargement du modèle Whisper (cela peut prendre quelques instants)...")
+whisper_service.preload_model()
 print("✅ Application prête!")
 
 app = FastAPI(title="Minuta API", version="0.1.0")
@@ -41,13 +49,38 @@ app.add_middleware(
 app.include_router(prompts.router)
 app.include_router(summary.router)
 
-# Service Whisper (singleton)
-whisper_service = WhisperService()
+# Thread pool pour les transcriptions (éviter de bloquer le WebSocket)
+transcription_executor = ThreadPoolExecutor(max_workers=2)
 
 
 @app.get("/")
 def root():
     return {"message": "Minuta API", "version": "0.1.0"}
+
+
+async def transcribe_partial(chunks: list[bytes], language: str, websocket: WebSocket):
+    """Transcrit les chunks de manière asynchrone et envoie le résultat partiel"""
+    try:
+        # Transcrire dans un thread pour ne pas bloquer
+        loop = asyncio.get_event_loop()
+        partial_text = await loop.run_in_executor(
+            transcription_executor,
+            whisper_service.transcribe_streaming,
+            chunks,
+            language
+        )
+        
+        if partial_text and partial_text.strip():
+            try:
+                await websocket.send_json({
+                    "type": "partial",
+                    "text": partial_text
+                })
+                print(f"Transcription partielle envoyée: {len(partial_text)} caractères")
+            except Exception as e:
+                print(f"Erreur envoi transcription partielle: {e}")
+    except Exception as e:
+        print(f"Erreur transcription partielle: {e}")
 
 
 @app.websocket("/ws/transcribe")
@@ -56,9 +89,12 @@ async def websocket_transcribe(websocket: WebSocket):
     await websocket.accept()
     
     audio_chunks = []
+    chunks_for_partial = []  # Chunks accumulés depuis la dernière transcription partielle
     is_recording = True
     language = "fr"  # Par défaut français
-    import time
+    last_partial_time = time.time()
+    partial_interval = 3.0  # Transcrire partiellement toutes les 3 secondes
+    partial_task = None
 
     try:
         while is_recording:
@@ -85,14 +121,30 @@ async def websocket_transcribe(websocket: WebSocket):
                 # Chunk audio (webm/opus)
                 chunk_bytes = data["bytes"]
                 audio_chunks.append(chunk_bytes)
+                chunks_for_partial.append(chunk_bytes)
                 print(f"Chunk audio reçu: {len(chunk_bytes)} bytes (total: {len(audio_chunks)} chunks)")
                 
-                # Transcription partielle désactivée car les chunks partiels ne forment pas toujours
-                # un fichier webm valide, ce qui cause des erreurs ffmpeg.
-                # La transcription sera affichée à la fin de l'enregistrement.
-                # Si vous souhaitez réactiver les transcriptions partielles, il faudrait
-                # utiliser une approche différente (par exemple, accumuler les chunks dans
-                # un buffer et créer un fichier webm valide avec un header complet).
+                # Vérifier si on doit faire une transcription partielle
+                current_time = time.time()
+                if current_time - last_partial_time >= partial_interval and len(chunks_for_partial) > 0:
+                    # Transcrire les chunks accumulés depuis la dernière transcription partielle
+                    chunks_to_transcribe = chunks_for_partial.copy()
+                    chunks_for_partial = []  # Réinitialiser pour la prochaine période
+                    last_partial_time = current_time
+                    
+                    # Lancer la transcription partielle de manière asynchrone
+                    if partial_task and not partial_task.done():
+                        # Annuler la tâche précédente si elle n'est pas terminée
+                        partial_task.cancel()
+                    partial_task = asyncio.create_task(
+                        transcribe_partial(chunks_to_transcribe, language, websocket)
+                    )
+
+        # Attendre que la dernière transcription partielle soit terminée
+        if partial_task and not partial_task.done():
+            try:
+                await partial_task
+            except asyncio.CancelledError:
                 pass
 
         # Transcription finale - combiner tous les chunks en un seul fichier
@@ -100,7 +152,15 @@ async def websocket_transcribe(websocket: WebSocket):
             try:
                 total_bytes = sum(len(chunk) for chunk in audio_chunks)
                 print(f"Transcription finale de {len(audio_chunks)} chunks audio ({total_bytes} bytes total)...")
-                final_text = whisper_service.transcribe_streaming(audio_chunks, language=language)
+                
+                # Transcrire dans un thread pour ne pas bloquer
+                loop = asyncio.get_event_loop()
+                final_text = await loop.run_in_executor(
+                    transcription_executor,
+                    whisper_service.transcribe_streaming,
+                    audio_chunks,
+                    language
+                )
                 
                 # Vérifier si la connexion WebSocket est encore ouverte
                 try:

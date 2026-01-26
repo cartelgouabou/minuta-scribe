@@ -49,7 +49,7 @@ function PromptList({
                   {prompt.content.substring(0, 100)}...
                 </td>
                 <td>
-                  <button onClick={() => onEdit(prompt)} className="btn btn-small">
+                  <button onClick={() => onEdit(prompt)} className="btn btn-small btn-edit">
                     Modifier
                   </button>
                   <button

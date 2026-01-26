@@ -24,12 +24,66 @@
 ### Caractéristiques principales
 
 - **Offline-first** : Tout fonctionne localement. La transcription utilise Whisper local et la génération de compte rendu utilise Ollama avec des modèles LLM locaux (Mistral 7B et Llama 3.2 3B). Choix du modèle disponible dans l'interface (v2.0)
-- **Temps réel** : Transcription partielle toutes les 15 secondes pendant l'enregistrement
+- **Temps réel** : Transcription partielle toutes les 3 secondes pendant l'enregistrement (v2.1)
+- **Collage externe** : Possibilité de coller une transcription depuis une autre application (v2.1)
 - **Multi-langues** : Support français et anglais
 - **GPU automatique** : Détection et utilisation automatique du GPU si disponible (CUDA, MPS)
 - **Thème adaptatif** : Support dark/light mode avec toggle manuel
 - **Édition du compte rendu** : Possibilité d'éditer le compte rendu généré avant export (v2.0)
 
+
+## 📦 Version 2.1 - 26 janvier 2026
+
+### 🎉 Nouvelles fonctionnalités et améliorations
+
+**Version 2.1** apporte des améliorations significatives de performance et d'expérience utilisateur.
+
+#### ✨ Fonctionnalités ajoutées
+
+1. **Collage de transcription externe**
+   - Possibilité de coller une transcription depuis une autre application directement dans le champ de transcription
+   - Le générateur de compte rendu s'affiche automatiquement dès qu'il y a du texte, même sans enregistrement
+   - Modification de `TranscriptionView.tsx` pour permettre l'édition même sans enregistrement
+   - Modification de `Meeting.tsx` pour afficher `SummaryGenerator` dès qu'il y a une transcription
+
+2. **Transcriptions partielles en temps réel**
+   - Affichage progressif de la transcription pendant l'enregistrement (toutes les 3 secondes)
+   - Amélioration significative de l'expérience utilisateur
+   - Backend : Implémentation avec `ThreadPoolExecutor` pour ne pas bloquer le WebSocket
+   - Backend : Fonction `transcribe_partial()` asynchrone pour transcrire périodiquement
+   - Frontend : Gestion améliorée des messages `partial` avec fusion intelligente
+
+3. **Optimisations de performance**
+   - **Préchargement du modèle Whisper** : Le modèle est chargé au démarrage de l'application pour éviter les délais lors de la première transcription
+   - **Paramètres Whisper optimisés** : `best_of=1` (au lieu de 2) et `beam_size=3` (au lieu de 5) pour une transcription plus rapide
+   - **Thread pool** : Utilisation de `ThreadPoolExecutor` pour les transcriptions afin de ne pas bloquer le WebSocket
+
+#### 🐛 Corrections
+
+1. **Correction de la duplication du dernier mot**
+   - Nouvelle fonction `mergeTranscription()` dans `AudioRecorder.tsx`
+   - Détection intelligente des chevauchements de texte en comparant les derniers mots de la transcription accumulée avec les premiers mots du nouveau texte
+   - Évite les répétitions et les doublons dans les transcriptions partielles
+
+#### 📝 Changements dans le code
+
+**Frontend** :
+- `TranscriptionView.tsx` : Permet l'édition même sans enregistrement, suppression de la variable `wasRecording` inutilisée
+- `Meeting.tsx` : Affiche `SummaryGenerator` dès qu'il y a une transcription (même collée manuellement)
+- `AudioRecorder.tsx` : 
+  - Nouvelle fonction `mergeTranscription()` pour détecter et supprimer les chevauchements
+  - Amélioration de la gestion des messages `partial` avec fusion intelligente
+
+**Backend** :
+- `main.py` : 
+  - Implémentation des transcriptions partielles avec `asyncio` et `ThreadPoolExecutor`
+  - Fonction `transcribe_partial()` pour transcrire périodiquement
+  - Préchargement du modèle Whisper au démarrage
+- `whisper_service.py` : 
+  - Méthode `preload_model()` pour précharger le modèle
+  - Optimisation des paramètres (`best_of=1`, `beam_size=3`)
+
+---
 
 ## 📦 Version 2.0 - Janvier 2026
 
@@ -756,4 +810,4 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ---
 
-**Dernière mise à jour :** Janvier 2026 (Version 2.0)
+**Dernière mise à jour :** 26 janvier 2026 (Version 2.1)

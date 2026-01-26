@@ -12,23 +12,13 @@ function TranscriptionView({
   isRecording,
 }: TranscriptionViewProps) {
   const [editableText, setEditableText] = useState<string>(transcription)
-  const [wasRecording, setWasRecording] = useState<boolean>(false)
 
   useEffect(() => {
-    if (isRecording) {
-      // Pendant l'enregistrement, on cache la transcription et on affiche le loader
-      setWasRecording(true)
-    } else {
-      // Une fois l'enregistrement terminé
-      if (transcription) {
-        // Si la transcription est disponible, l'afficher
-        setEditableText(transcription)
-        setWasRecording(false)
-      }
-      // Si pas encore de transcription mais qu'on vient de terminer l'enregistrement,
-      // on garde wasRecording à true pour continuer à afficher le loader
+    // Synchroniser editableText avec transcription quand elle change
+    if (transcription !== editableText) {
+      setEditableText(transcription)
     }
-  }, [transcription, isRecording])
+  }, [transcription, editableText])
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value
@@ -40,16 +30,16 @@ function TranscriptionView({
     ? "Transcription en cours... La transcription sera affichée à la fin de l'enregistrement."
     : "Traitement de la transcription en cours... Veuillez patienter."
 
-  // Afficher le spinner seulement si on est en train d'enregistrer OU si on vient de terminer
-  // l'enregistrement et qu'on attend encore la transcription finale
-  const showLoading = isRecording || (wasRecording && !transcription)
+  // Afficher le spinner seulement si on est en train d'enregistrer ET qu'on n'a pas encore de transcription
+  // Sinon, toujours permettre l'édition/collage
+  const showLoading = isRecording && !editableText
   
   // Déterminer le placeholder selon l'état
   const getPlaceholder = () => {
-    if (transcription) {
-      return "Éditez la transcription ici"
+    if (editableText) {
+      return "Éditez la transcription ici ou collez une transcription depuis une autre application"
     }
-    return "Lancer l'enregistrement pour générer une transcription"
+    return "Lancer l'enregistrement pour générer une transcription, ou collez une transcription depuis une autre application"
   }
 
   return (

@@ -25,6 +25,57 @@ function AudioRecorder({
   const streamRef = useRef<MediaStream | null>(null)
   const accumulatedTranscriptionRef = useRef<string>('')
 
+  // Fonction pour détecter et supprimer les chevauchements de texte
+  const mergeTranscription = (current: string, newText: string): string => {
+    if (!current || !current.trim()) {
+      return newText.trim()
+    }
+
+    const currentTrimmed = current.trim()
+    const newTrimmed = newText.trim()
+
+    // Si le nouveau texte est déjà complètement contenu dans le texte actuel, ne rien ajouter
+    if (currentTrimmed.includes(newTrimmed)) {
+      return currentTrimmed
+    }
+
+    // Détecter le chevauchement en comparant les derniers mots du texte actuel
+    // avec les premiers mots du nouveau texte
+    const currentWords = currentTrimmed.split(/\s+/)
+    const newWords = newTrimmed.split(/\s+/)
+
+    // Chercher un chevauchement en comparant de 1 à min(10, longueur) mots
+    let overlapLength = 0
+    const maxOverlap = Math.min(10, Math.min(currentWords.length, newWords.length))
+
+    for (let i = 1; i <= maxOverlap; i++) {
+      const currentEnd = currentWords.slice(-i).join(' ').toLowerCase()
+      const newStart = newWords.slice(0, i).join(' ').toLowerCase()
+
+      if (currentEnd === newStart) {
+        overlapLength = i
+      }
+    }
+
+    // Si on a trouvé un chevauchement, ne garder que la partie non dupliquée
+    if (overlapLength > 0) {
+      const nonOverlappingWords = newWords.slice(overlapLength)
+      if (nonOverlappingWords.length > 0) {
+        // Ajouter un espace si nécessaire
+        const separator = currentTrimmed.endsWith(' ') || currentTrimmed.endsWith('.') || 
+                         currentTrimmed.endsWith('!') || currentTrimmed.endsWith('?') ? '' : ' '
+        return currentTrimmed + separator + nonOverlappingWords.join(' ')
+      }
+      // Si tout le nouveau texte est déjà dans l'ancien, retourner l'ancien
+      return currentTrimmed
+    }
+
+    // Pas de chevauchement détecté, ajouter le nouveau texte avec un espace
+    const separator = currentTrimmed.endsWith(' ') || currentTrimmed.endsWith('.') || 
+                     currentTrimmed.endsWith('!') || currentTrimmed.endsWith('?') ? '' : ' '
+    return currentTrimmed + separator + newTrimmed
+  }
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -82,21 +133,14 @@ function AudioRecorder({
           const data = JSON.parse(event.data)
           console.log('Message WebSocket reçu:', data)
           if (data.type === 'partial') {
-            // Accumuler les transcriptions partielles
+            // Accumuler les transcriptions partielles avec détection de chevauchement
             const newText = data.text.trim()
             console.log('Transcription partielle reçue:', newText)
             if (newText) {
-              const current = accumulatedTranscriptionRef.current.trim()
-              
-              // Si le nouveau texte n'est pas déjà dans la transcription accumulée, l'ajouter
-              if (!current || !current.includes(newText)) {
-                // Ajouter un espace si nécessaire
-                if (current && !current.endsWith(' ') && !current.endsWith('.') && !current.endsWith('!') && !current.endsWith('?')) {
-                  accumulatedTranscriptionRef.current += ' '
-                }
-                accumulatedTranscriptionRef.current += newText
-                console.log('Transcription accumulée mise à jour:', accumulatedTranscriptionRef.current)
-              }
+              const current = accumulatedTranscriptionRef.current
+              // Utiliser la fonction de fusion intelligente pour éviter les doublons
+              accumulatedTranscriptionRef.current = mergeTranscription(current, newText)
+              console.log('Transcription accumulée mise à jour:', accumulatedTranscriptionRef.current)
               
               // Toujours mettre à jour la transcription en temps réel
               onTranscriptionUpdate(accumulatedTranscriptionRef.current)
