@@ -47,7 +47,16 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
    > cd minuta-scribe
    > ```
 
-2. **Lancer l'application**
+2. **Rendre les scripts exécutables (si nécessaire)**
+   
+   Sur Linux et macOS, vous devez rendre les scripts exécutables :
+   ```bash
+   chmod +x start.sh uninstall.sh
+   ```
+   
+   > **Note :** Cette étape n'est nécessaire qu'une seule fois après le clonage du projet. Sur Windows avec Git Bash, les scripts sont généralement déjà exécutables.
+
+3. **Lancer l'application**
    
    **Option A : Utiliser le script automatique (recommandé)**
    ```bash
@@ -65,7 +74,24 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
    
    > **Note :** Le premier lancement peut prendre plusieurs minutes pour télécharger les modèles LLM (~6.4GB au total). Les lancements suivants seront beaucoup plus rapides.
 
-3. **Ouvrir dans votre navigateur**
+4. **Désinstaller l'application (optionnel)**
+   
+   Si vous souhaitez supprimer complètement Minuta de votre système :
+   ```bash
+   ./uninstall.sh
+   ```
+   
+   Cette commande va :
+   - Détecter automatiquement si l'application est en cours d'exécution
+   - Arrêter et supprimer tous les conteneurs Minuta
+   - Supprimer toutes les images Docker de Minuta
+   - Supprimer tous les volumes (données backend + modèles LLM Ollama)
+   - Supprimer le réseau Docker Minuta
+   - Libérer environ 10-15 GB d'espace disque
+   
+   > **Note :** Vous devrez confirmer la désinstallation en tapant "oui". L'image Ollama ne sera supprimée que si vous le confirmez (elle peut être utilisée par d'autres projets). Le script fonctionne même si l'application tourne en arrière-plan.
+
+5. **Ouvrir dans votre navigateur**
    - Allez sur [http://localhost](http://localhost)
    - L'application est prête !
 
@@ -130,6 +156,12 @@ Cliquez sur l'icône ☀️/🌙 en haut à droite pour basculer entre le thème
 
 ## ❓ Problèmes courants
 
+### "permission denied" lors de l'exécution des scripts
+**Solution :** Rendez les scripts exécutables avec :
+```bash
+chmod +x start.sh uninstall.sh
+```
+
 ### "ffmpeg not found"
 **Solution :** Installez ffmpeg sur votre système (voir prérequis ci-dessus).
 
@@ -154,6 +186,13 @@ Cliquez sur l'icône ☀️/🌙 en haut à droite pour basculer entre le thème
 - Vérifiez que les ports 80 (frontend), 8000 (backend) et 11434 (Ollama) ne sont pas utilisés
 - Consultez les messages d'erreur dans les terminaux
 - Assurez-vous d'avoir au moins 8GB de RAM disponible pour les modèles LLM
+
+### Désinstaller complètement l'application
+**Solution :**
+```bash
+./uninstall.sh
+```
+Cette commande supprimera tous les conteneurs, images, volumes et réseaux Docker liés à Minuta, libérant environ 10-15 GB d'espace disque. Le script détecte automatiquement si l'application est en cours d'exécution et l'arrête avant de procéder à la désinstallation.
 
 ## 📞 Support
 
