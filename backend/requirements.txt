@@ -17,8 +17,8 @@ sqlalchemy>=2.0.23
 # Audio Transcription (Whisper)
 openai-whisper>=20231117
 
-# LLM API
-groq>=0.4.0
+# LLM API (OpenAI-compatible client for LocalAI)
+openai>=1.0.0
 
 # Utilities
 python-multipart>=0.0.6

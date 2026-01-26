@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from app.db.database import get_db
 from app.models.prompt import Prompt
-from app.services.groq_service import GroqService
+from app.services.ollama_service import OllamaService
 
 router = APIRouter(prefix="/api", tags=["summary"])
 
@@ -12,6 +12,7 @@ router = APIRouter(prefix="/api", tags=["summary"])
 class GenerateSummaryRequest(BaseModel):
     transcription: str
     prompt_id: int
+    model: str = "mistral:7b-instruct"  # Par défaut Mistral, options: "mistral:7b-instruct" ou "llama3.2:3b"
 
 
 class GenerateSummaryResponse(BaseModel):
@@ -32,14 +33,23 @@ def generate_summary(
     if not request.transcription or not request.transcription.strip():
         raise HTTPException(status_code=400, detail="Transcription cannot be empty")
 
+    # Valider le modèle
+    valid_models = ["mistral:7b-instruct", "llama3.2:3b"]
+    if request.model not in valid_models:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Modèle invalide. Modèles disponibles: {', '.join(valid_models)}"
+        )
+
     try:
-        # Générer le compte rendu via Groq
-        groq_service = GroqService()
-        summary = groq_service.generate_summary(prompt.content, request.transcription)
+        # Générer le compte rendu via Ollama
+        ollama_service = OllamaService()
+        summary = ollama_service.generate_summary(
+            prompt.content, 
+            request.transcription, 
+            model=request.model
+        )
         return GenerateSummaryResponse(summary=summary)
-    except ValueError as e:
-        # Erreur de configuration (clé API manquante)
-        raise HTTPException(status_code=500, detail=f"Configuration error: {str(e)}")
     except Exception as e:
         # Autres erreurs
         import traceback

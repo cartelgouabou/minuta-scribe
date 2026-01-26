@@ -9,6 +9,7 @@ export interface Prompt {
 export interface GenerateSummaryRequest {
   transcription: string
   prompt_id: number
+  model?: string
 }
 
 export interface GenerateSummaryResponse {

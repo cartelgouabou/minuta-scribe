@@ -10,6 +10,7 @@ interface SummaryGeneratorProps {
 function SummaryGenerator({ transcription }: SummaryGeneratorProps) {
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null)
+  const [selectedModel, setSelectedModel] = useState<string>('mistral:7b-instruct')
   const [summary, setSummary] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,6 +45,7 @@ function SummaryGenerator({ transcription }: SummaryGeneratorProps) {
       const result = await generateSummary({
         transcription,
         prompt_id: selectedPromptId,
+        model: selectedModel,
       })
       setSummary(result.summary)
     } catch (err) {
@@ -71,6 +73,18 @@ function SummaryGenerator({ transcription }: SummaryGeneratorProps) {
               {prompt.title}
             </option>
           ))}
+        </select>
+      </div>
+      <div className="form-group">
+        <label htmlFor="model-select">Modèle LLM :</label>
+        <select
+          id="model-select"
+          value={selectedModel}
+          onChange={(e) => setSelectedModel(e.target.value)}
+          disabled={loading}
+        >
+          <option value="mistral:7b-instruct">Mistral 7B Instruct</option>
+          <option value="llama3.2:3b">Llama 3.2 3B Instruct</option>
         </select>
       </div>
       <button
