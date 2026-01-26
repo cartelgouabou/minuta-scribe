@@ -56,6 +56,16 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
 
 > **💡 Installation simple :** Utilisez `./start.sh` pour installer et lancer l'application. Utilisez `./uninstall.sh` pour désinstaller complètement.
 
+## 🐳 Qu'est-ce que Docker ?
+
+**Docker** est une plateforme qui permet d'empaqueter une application et toutes ses dépendances dans des "conteneurs" isolés. Pour Minuta, Docker est essentiel car il permet de :
+
+- **Simplifier l'installation** : Toutes les dépendances (Python, Node.js, Whisper, Ollama, etc.) sont préconfigurées dans des conteneurs
+- **Garantir la compatibilité** : L'application fonctionne de la même manière sur macOS, Linux et Windows
+- **Isoler l'environnement** : Minuta fonctionne dans son propre environnement sans affecter le reste de votre système
+
+Minuta utilise **Docker Desktop** (ou Docker Engine sur Linux) pour gérer ces conteneurs. Si Docker n'est pas déjà installé sur votre machine, le script `start.sh` peut l'installer automatiquement pour vous.
+
 ## ✨ Fonctionnalités principales
 
 ### Page Meeting
@@ -75,6 +85,23 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
 - ➕ Création, modification et suppression de prompts
 
 ## 🚀 Installation rapide
+
+> **📋 Prérequis : Docker Desktop**
+> 
+> Minuta nécessite **Docker Desktop** (ou Docker Engine sur Linux) pour fonctionner. Si Docker n'est pas encore installé sur votre machine, vous avez deux options :
+> 
+> **Option 1 : Installation manuelle (recommandée)**
+> - Installez Docker Desktop manuellement avant de lancer le script `start.sh`
+> - Sur macOS : Téléchargez depuis [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
+> - Sur Windows : Téléchargez depuis [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
+> - Sur Linux : Suivez les instructions pour votre distribution sur [docs.docker.com](https://docs.docker.com/engine/install/)
+> 
+> **Option 2 : Installation automatique via le script**
+> - Lancez directement `./start.sh` et le script vous proposera d'installer Docker automatiquement
+> - **Sur macOS** : Lors de l'installation automatique, vous serez invité à entrer votre **mot de passe administrateur** dans le terminal. C'est normal et nécessaire pour installer Docker Desktop via Homebrew.
+> - Le script vous guidera ensuite pour démarrer Docker Desktop après l'installation
+> 
+> > **💡 Note :** L'installation automatique sur macOS utilise Homebrew. Si Homebrew n'est pas installé, il sera installé automatiquement, ce qui peut également demander votre mot de passe.
 
 ### Installation en 4 étapes simples
 
@@ -149,6 +176,8 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
    
    > **Note :** Aucune configuration manuelle n'est nécessaire ! Le premier lancement peut prendre plusieurs minutes pour télécharger les modèles LLM (~6.4GB au total). Les lancements suivants seront beaucoup plus rapides.
    
+   > **Note Docker :** Si Docker n'est pas installé, le script vous proposera de l'installer automatiquement. Sur macOS, vous devrez entrer votre mot de passe administrateur lors de l'installation. Voir la section [Prérequis](#-installation-rapide) ci-dessus pour plus de détails.
+   
    > **Note Windows :** Sur Windows, vous devez utiliser **Git Bash** pour exécuter les scripts. Si Git Bash n'est pas installé, le script vous proposera de l'installer automatiquement. Si Docker n'est pas installé, le script vous guidera pour installer Docker Desktop pour Windows.
 
 4. **Ouvrir dans votre navigateur**
@@ -193,6 +222,19 @@ Le script `uninstall.sh` va automatiquement :
 - Formulaire de création/édition
 - Recherche de prompts
 - Actions CRUD (Créer, Modifier, Supprimer)
+
+### Terminal - Après installation complète
+
+![Terminal - Sortie après installation](docs/screenshots/cli-output.png)
+
+*Capture d'écran du terminal montrant :*
+- ✅ Conteneurs Docker démarrés avec succès (minuta-ollama, minuta-backend, minuta-frontend)
+- ✅ Téléchargement des modèles LLM (Mistral 7B Instruct et Llama 3.2 3B Instruct)
+- ℹ️ URL d'accès à l'application : `http://localhost`
+- ℹ️ Liste des modèles LLM disponibles
+- ℹ️ Commandes utiles pour voir les logs et arrêter l'application
+
+> **💡 Note :** Cette capture montre l'état du terminal une fois que tous les conteneurs sont démarrés et que les modèles LLM sont téléchargés. Le processus peut prendre plusieurs minutes lors du premier lancement, surtout pour télécharger les modèles (~6.4GB au total).
 
 ## 📖 Comment utiliser Minuta
 
