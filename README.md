@@ -339,6 +339,11 @@ Vous êtes prêt à utiliser Minuta. Bonne transcription !
 
 ## 📚 Historique des versions
 
+### Version 2.1.1 - Janvier 2026
+
+**Corrections :**
+- 🐛 **Correction de l'erreur 504 Gateway Timeout** : Augmentation des timeouts Nginx et frontend pour permettre la génération de compte rendu avec de longues transcriptions. Les timeouts ont été portés à 5 minutes pour gérer les cas où Ollama nécessite plus de temps pour traiter de grandes transcriptions.
+
 ### Version 2.1 - 26 janvier 2026
 
 **Nouvelles fonctionnalités :**
