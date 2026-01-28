@@ -207,6 +207,8 @@ Le script `update.sh` va automatiquement :
 - ✅ Télécharger et appliquer les dernières mises à jour
 - ✅ Écraser les changements locaux pour rester synchronisé avec GitHub
 
+> **💡 Recommandation :** Il est recommandé de lancer `./update.sh` de temps en temps pour vérifier s'il y a de nouvelles mises à jour disponibles. Des bugs peuvent être corrigés suite aux retours d'autres utilisateurs, et ces corrections sont automatiquement disponibles via le script de mise à jour. Cela vous permet de bénéficier des dernières améliorations et corrections sans avoir à refaire une installation complète.
+
 > **Note :** Le script demande confirmation avant d'écraser vos changements locaux. Si vous avez des modifications non commitées que vous souhaitez conserver, sauvegardez-les avant de lancer la mise à jour.
 
 > **💡 Astuce :** Après une mise à jour, relancez simplement `./start.sh` pour utiliser la nouvelle version.
