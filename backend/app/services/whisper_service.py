@@ -134,13 +134,14 @@ class WhisperService:
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
 
-    def transcribe_streaming(self, audio_chunks: list[bytes], language: str = None) -> str:
+    def transcribe_streaming(self, audio_chunks: list[bytes], language: str = None, is_partial: bool = False) -> str:
         """
         Transcrit plusieurs chunks audio (pour streaming)
         
         Args:
             audio_chunks: Liste de chunks audio webm/opus
             language: Code langue ("fr" pour français, "en" pour anglais, None pour auto-détection)
+            is_partial: True si c'est une transcription partielle (toutes les 3 secondes), False pour la transcription finale
         
         Returns:
             Texte transcrit complet
@@ -163,20 +164,70 @@ class WhisperService:
         webm_path = webm_file.name
         
         try:
+            # Définir la durée minimale requise selon le type de transcription
+            # Pour les transcriptions partielles, on est plus tolérant (0.5s minimum)
+            # Pour la transcription finale, on exige au moins 1 seconde
+            if is_partial:
+                MIN_DURATION = 0.5  # 0.5 seconde pour les transcriptions partielles
+            else:
+                MIN_DURATION = 1.0  # 1 seconde pour la transcription finale
+            
+            # Vérifier la durée de l'audio avant conversion
+            audio_duration = self.get_audio_duration(webm_path)
+            print(f"Durée de l'audio: {audio_duration:.2f} secondes (partielle: {is_partial})")
+            
+            # Si ffprobe ne peut pas déterminer la durée (retourne 0.0), on essaie quand même la conversion
+            # car parfois les fichiers webm peuvent être valides même si ffprobe échoue
+            if audio_duration == 0.0:
+                print("ATTENTION: ffprobe n'a pas pu déterminer la durée, on continue quand même...")
+                # Pour les transcriptions partielles, on continue sans vérifier la durée
+                if is_partial:
+                    pass  # On continue
+                # Pour la transcription finale, on vérifie la taille du fichier comme alternative
+                elif len(combined_webm) < 5000:  # Moins de 5KB = probablement vide
+                    error_msg = "Le fichier audio semble vide ou corrompu. Vérifiez que le microphone fonctionne correctement."
+                    print(f"ERREUR: {error_msg}")
+                    raise ValueError(error_msg)
+            else:
+                if audio_duration < MIN_DURATION:
+                    # Pour les transcriptions partielles, on retourne simplement une chaîne vide au lieu d'erreur
+                    if is_partial:
+                        print(f"Transcription partielle trop courte ({audio_duration:.2f}s), retour vide")
+                        return ""
+                    else:
+                        error_msg = f"L'audio est trop court ({audio_duration:.1f}s). Veuillez enregistrer au moins {MIN_DURATION:.0f} seconde d'audio."
+                        print(f"ERREUR: {error_msg}")
+                        raise ValueError(error_msg)
+            
             # Convertir directement le webm en WAV
             print(f"Conversion webm vers WAV avec ffmpeg...")
             wav_data = self.convert_webm_to_wav_from_file(webm_path)
             print(f"Conversion réussie, taille WAV: {len(wav_data)} bytes")
             
             if len(wav_data) < 1000:
-                print("ATTENTION: Le fichier WAV est très petit, peut-être vide")
-                return ""
+                error_msg = "Le fichier audio converti est trop petit ou vide. Vérifiez que le microphone fonctionne correctement."
+                print(f"ERREUR: {error_msg}")
+                raise ValueError(error_msg)
             
             # Sauvegarder le WAV temporairement pour Whisper
             wav_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
             wav_file.write(wav_data)
             wav_file.close()
             wav_path = wav_file.name
+            
+            # Vérifier à nouveau la durée après conversion
+            wav_duration = self.get_audio_duration(wav_path)
+            print(f"Durée du WAV converti: {wav_duration:.2f} secondes")
+            
+            if wav_duration < MIN_DURATION:
+                # Pour les transcriptions partielles, on retourne simplement une chaîne vide
+                if is_partial:
+                    print(f"WAV converti trop court pour transcription partielle ({wav_duration:.2f}s), retour vide")
+                    return ""
+                else:
+                    error_msg = f"L'audio converti est trop court ({wav_duration:.1f}s). L'enregistrement peut être silencieux ou corrompu."
+                    print(f"ERREUR: {error_msg}")
+                    raise ValueError(error_msg)
             
             try:
                 # Transcrire avec Whisper avec des paramètres optimisés pour la vitesse
@@ -204,20 +255,81 @@ class WhisperService:
                     if text:
                         print(f"Texte: '{text[:100]}...'")
                 return text
+            except RuntimeError as e:
+                error_str = str(e)
+                # Détecter spécifiquement l'erreur de tensor
+                if "reshape" in error_str.lower() or "tensor" in error_str.lower() or "0 elements" in error_str:
+                    # Pour les transcriptions partielles, on retourne simplement une chaîne vide
+                    if is_partial:
+                        print(f"ERREUR TENSOR lors de transcription partielle (audio trop court), retour vide")
+                        return ""
+                    else:
+                        error_msg = "L'audio enregistré est trop court ou silencieux pour être transcrit. Veuillez enregistrer au moins 1 seconde d'audio avec du son audible."
+                        print(f"ERREUR TENSOR: {error_msg}")
+                        raise ValueError(error_msg) from e
+                else:
+                    # Autre erreur RuntimeError, la propager avec un message plus clair
+                    error_msg = f"Erreur lors du traitement de l'audio: {error_str}"
+                    print(f"ERREUR RUNTIME: {error_msg}")
+                    raise ValueError(error_msg) from e
             finally:
                 # Nettoyer le fichier WAV
                 if os.path.exists(wav_path):
                     os.unlink(wav_path)
-        except Exception as e:
-            print(f"Erreur lors de la transcription: {e}")
-            import traceback
-            traceback.print_exc()
+        except ValueError:
+            # Re-lancer les ValueError telles quelles (messages d'erreur user-friendly)
             raise
+        except Exception as e:
+            error_str = str(e)
+            # Détecter l'erreur de tensor même si elle n'est pas dans un RuntimeError
+            if "reshape" in error_str.lower() or "tensor" in error_str.lower() or "0 elements" in error_str:
+                # Pour les transcriptions partielles, on retourne simplement une chaîne vide
+                if is_partial:
+                    print(f"ERREUR TENSOR lors de transcription partielle (audio trop court), retour vide")
+                    return ""
+                else:
+                    error_msg = "L'audio enregistré est trop court ou silencieux pour être transcrit. Veuillez enregistrer au moins 1 seconde d'audio avec du son audible."
+                    print(f"ERREUR TENSOR: {error_msg}")
+                    raise ValueError(error_msg) from e
+            else:
+                print(f"Erreur lors de la transcription: {e}")
+                import traceback
+                traceback.print_exc()
+                raise
         finally:
             # Nettoyer le fichier webm
             if os.path.exists(webm_path):
                 os.unlink(webm_path)
     
+    def get_audio_duration(self, audio_path: str) -> float:
+        """
+        Obtient la durée d'un fichier audio en secondes via ffprobe
+        
+        Args:
+            audio_path: Chemin vers le fichier audio
+        
+        Returns:
+            Durée en secondes, ou 0.0 si la durée ne peut pas être déterminée
+        """
+        try:
+            result = subprocess.run(
+                [
+                    "ffprobe",
+                    "-v", "error",
+                    "-show_entries", "format=duration",
+                    "-of", "default=noprint_wrappers=1:nokey=1",
+                    audio_path,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            duration = float(result.stdout.strip())
+            return duration
+        except (subprocess.CalledProcessError, ValueError, FileNotFoundError) as e:
+            print(f"Impossible de déterminer la durée de l'audio: {e}")
+            return 0.0
+
     def convert_webm_to_wav_from_file(self, webm_path: str) -> bytes:
         """
         Convertit un fichier webm en WAV PCM via ffmpeg

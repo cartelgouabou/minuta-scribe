@@ -45,6 +45,13 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
    - Libération automatique de l'espace disque (~10-15 GB)
    - Confirmation avant suppression pour éviter les erreurs
 
+5. **🔄 Script de mise à jour (`update.sh`)**
+   - Mise à jour automatique depuis GitHub en un seul clic
+   - Vérification des mises à jour disponibles
+   - Téléchargement et application automatique des dernières versions
+   - Sauvegarde temporaire des modifications locales avant mise à jour
+   - Messages clairs pour guider l'utilisateur
+
 #### 🔧 Améliorations techniques
 
 - Support Windows via Git Bash avec installation automatique
@@ -54,7 +61,7 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
 
 ---
 
-> **💡 Installation simple :** Utilisez `./start.sh` pour installer et lancer l'application. Utilisez `./uninstall.sh` pour désinstaller complètement.
+> **💡 Installation simple :** Utilisez `./start.sh` pour installer et lancer l'application. Utilisez `./update.sh` pour mettre à jour depuis GitHub. Utilisez `./uninstall.sh` pour désinstaller complètement.
 
 ## 🐳 Qu'est-ce que Docker ?
 
@@ -149,14 +156,14 @@ Minuta utilise **Docker Desktop** (ou Docker Engine sur Linux) pour gérer ces c
    
    **Sur Linux et macOS :**
    ```bash
-   chmod +x start.sh uninstall.sh
+   chmod +x start.sh update.sh uninstall.sh
    ```
    
    **Sur Windows :**
    - Si vous utilisez **Git Bash** : Les scripts sont généralement déjà exécutables
    - Si ce n'est pas le cas, exécutez :
      ```bash
-     chmod +x start.sh uninstall.sh
+     chmod +x start.sh update.sh uninstall.sh
      ```
    - **Note :** Les scripts ne fonctionnent qu'avec Git Bash sur Windows.
    
@@ -183,6 +190,26 @@ Minuta utilise **Docker Desktop** (ou Docker Engine sur Linux) pour gérer ces c
 4. **Ouvrir dans votre navigateur**
    - Allez sur [http://localhost](http://localhost)
    - L'application est prête !
+
+## 🔄 Mise à jour
+
+Pour mettre à jour Minuta avec les dernières versions depuis GitHub, utilisez le script `update.sh` :
+
+```bash
+./update.sh
+```
+
+Le script `update.sh` va automatiquement :
+- ✅ Vérifier si des mises à jour sont disponibles sur GitHub
+- ✅ Afficher les versions locale et distante pour comparaison
+- ✅ Demander confirmation avant d'appliquer les mises à jour
+- ✅ Sauvegarder temporairement vos modifications locales (stash)
+- ✅ Télécharger et appliquer les dernières mises à jour
+- ✅ Écraser les changements locaux pour rester synchronisé avec GitHub
+
+> **Note :** Le script demande confirmation avant d'écraser vos changements locaux. Si vous avez des modifications non commitées que vous souhaitez conserver, sauvegardez-les avant de lancer la mise à jour.
+
+> **💡 Astuce :** Après une mise à jour, relancez simplement `./start.sh` pour utiliser la nouvelle version.
 
 ## 🗑️ Désinstallation
 
@@ -280,7 +307,7 @@ Cliquez sur l'icône ☀️/🌙 en haut à droite pour basculer entre le thème
 ### "permission denied" lors de l'exécution des scripts
 **Solution :** Rendez les scripts exécutables avec :
 ```bash
-chmod +x start.sh uninstall.sh
+chmod +x start.sh update.sh uninstall.sh
 ```
 
 ### "ffmpeg not found"
@@ -338,6 +365,14 @@ Vous êtes prêt à utiliser Minuta. Bonne transcription !
 ---
 
 ## 📚 Historique des versions
+
+### Version 2.1.2 - Janvier 2026
+
+**Nouvelles fonctionnalités :**
+- 🔄 **Script de mise à jour automatique (`update.sh`)** : Nouveau script pour mettre à jour facilement l'application depuis GitHub. Vérifie automatiquement les mises à jour disponibles, affiche les versions locale et distante, et applique les mises à jour en un seul clic. Sauvegarde temporairement les modifications locales avant mise à jour.
+
+**Corrections :**
+- 🐛 **Correction de l'erreur de variable non définie** : Correction du bug "local variable 'MIN_DURATION' referenced before assignment" dans la gestion des transcriptions partielles.
 
 ### Version 2.1.1 - Janvier 2026
 

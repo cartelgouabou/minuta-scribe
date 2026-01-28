@@ -67,7 +67,8 @@ async def transcribe_partial(chunks: list[bytes], language: str, websocket: WebS
             transcription_executor,
             whisper_service.transcribe_streaming,
             chunks,
-            language
+            language,
+            True  # is_partial=True pour les transcriptions partielles
         )
         
         if partial_text and partial_text.strip():
@@ -79,7 +80,19 @@ async def transcribe_partial(chunks: list[bytes], language: str, websocket: WebS
                 print(f"Transcription partielle envoyée: {len(partial_text)} caractères")
             except Exception as e:
                 print(f"Erreur envoi transcription partielle: {e}")
+    except ValueError as e:
+        # Erreurs de validation (audio trop court, etc.) - envoyer au frontend
+        error_msg = str(e)
+        print(f"Erreur validation transcription partielle: {error_msg}")
+        try:
+            await websocket.send_json({
+                "type": "error",
+                "message": error_msg
+            })
+        except:
+            print("Impossible d'envoyer l'erreur, WebSocket fermé")
     except Exception as e:
+        # Autres erreurs - juste logger, ne pas interrompre le flux
         print(f"Erreur transcription partielle: {e}")
 
 

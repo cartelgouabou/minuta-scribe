@@ -158,6 +158,15 @@ function AudioRecorder({
           } else if (data.type === 'error') {
             console.error('Erreur transcription:', data.message)
             setError(data.message || 'Erreur lors de la transcription')
+            // Arrêter l'enregistrement et fermer le stream
+            setIsRecording(false)
+            onRecordingStop()
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+              mediaRecorderRef.current.stop()
+            }
+            if (streamRef.current) {
+              streamRef.current.getTracks().forEach((track) => track.stop())
+            }
             if (ws.readyState === WebSocket.OPEN) {
               ws.close()
             }
