@@ -372,11 +372,6 @@ Vous êtes prêt à utiliser Minuta. Bonne transcription !
 - 🔄 **Script de mise à jour automatique (`update.sh`)** : Nouveau script pour mettre à jour facilement l'application depuis GitHub. Vérifie automatiquement les mises à jour disponibles, affiche les versions locale et distante, et applique les mises à jour en un seul clic. Sauvegarde temporairement les modifications locales avant mise à jour.
 
 **Corrections :**
-- 🐛 **Correction de l'erreur de variable non définie** : Correction du bug "local variable 'MIN_DURATION' referenced before assignment" dans la gestion des transcriptions partielles.
-
-### Version 2.1.1 - 26 janvier 2026
-
-**Corrections :**
 - 🐛 **Correction de l'erreur 504 Gateway Timeout** : Augmentation des timeouts Nginx et frontend pour permettre la génération de compte rendu avec de longues transcriptions. Les timeouts ont été portés à 5 minutes pour gérer les cas où Ollama nécessite plus de temps pour traiter de grandes transcriptions.
 
 ### Version 2.1 - 26 janvier 2026
