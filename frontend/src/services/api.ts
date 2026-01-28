@@ -72,16 +72,32 @@ export async function deletePrompt(id: number): Promise<void> {
 export async function generateSummary(
   request: GenerateSummaryRequest
 ): Promise<GenerateSummaryResponse> {
-  const response = await fetch(`${API_BASE_URL}/generate-summary`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  })
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
-    throw new Error(error.detail || 'Failed to generate summary')
+  // Créer un AbortController avec un timeout de 5 minutes (300 secondes) pour les longues générations
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/generate-summary`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+      signal: controller.signal,
+    })
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
+      throw new Error(error.detail || 'Failed to generate summary')
+    }
+    return response.json()
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('La génération du compte rendu prend trop de temps. Veuillez réessayer avec une transcription plus courte ou un modèle plus rapide.')
+    }
+    throw error;
   }
-  return response.json()
 }
