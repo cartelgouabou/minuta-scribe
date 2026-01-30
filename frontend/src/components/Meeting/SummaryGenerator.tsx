@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getPrompts, generateSummary } from '../../services/api'
-import { Prompt } from '../../types'
+import { getPrompts, generateSummary, getModels } from '../../services/api'
+import { Prompt, ModelsResponse } from '../../types'
 import SummaryActions from './SummaryActions'
 
 interface SummaryGeneratorProps {
@@ -10,7 +10,10 @@ interface SummaryGeneratorProps {
 function SummaryGenerator({ transcription }: SummaryGeneratorProps) {
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null)
-  const [selectedModel, setSelectedModel] = useState<string>('mistral:7b-instruct')
+  const [availableModels, setAvailableModels] = useState<string[]>([])
+  const [defaultModel, setDefaultModel] = useState<string>('llama3.2:3b')
+  const [provider, setProvider] = useState<string>('ollama')
+  const [selectedModel, setSelectedModel] = useState<string>('')
   const [summary, setSummary] = useState<string>('')
   const [editedSummary, setEditedSummary] = useState<string>('')
   const [isEdited, setIsEdited] = useState<boolean>(false)
@@ -19,7 +22,24 @@ function SummaryGenerator({ transcription }: SummaryGeneratorProps) {
 
   useEffect(() => {
     loadPrompts()
+    loadModels()
   }, [])
+
+  // Recharger les modèles quand la fenêtre reprend le focus (au cas où la config a changé)
+  useEffect(() => {
+    const handleFocus = () => {
+      loadModels()
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [])
+
+  useEffect(() => {
+    // Mettre à jour le modèle sélectionné quand le modèle par défaut change
+    if (defaultModel && !selectedModel) {
+      setSelectedModel(defaultModel)
+    }
+  }, [defaultModel])
 
   const loadPrompts = async () => {
     try {
@@ -31,6 +51,24 @@ function SummaryGenerator({ transcription }: SummaryGeneratorProps) {
     } catch (err) {
       console.error('Error loading prompts:', err)
       setError('Erreur lors du chargement des prompts')
+    }
+  }
+
+  const loadModels = async () => {
+    try {
+      const modelsData: ModelsResponse = await getModels()
+      setAvailableModels(modelsData.models)
+      setProvider(modelsData.provider)
+      if (modelsData.default_model) {
+        setDefaultModel(modelsData.default_model)
+        setSelectedModel(modelsData.default_model)
+      }
+    } catch (err) {
+      console.error('Error loading models:', err)
+      // En cas d'erreur, utiliser les valeurs par défaut
+      setAvailableModels(['llama3.2:3b'])
+      setDefaultModel('llama3.2:3b')
+      setSelectedModel('llama3.2:3b')
     }
   }
 
@@ -86,15 +124,24 @@ function SummaryGenerator({ transcription }: SummaryGeneratorProps) {
         </select>
       </div>
       <div className="form-group">
-        <label htmlFor="model-select">Modèle LLM :</label>
+        <label htmlFor="model-select">
+          Modèle LLM ({provider}) :
+        </label>
         <select
           id="model-select"
           value={selectedModel}
           onChange={(e) => setSelectedModel(e.target.value)}
-          disabled={loading}
+          disabled={loading || availableModels.length === 0}
         >
-          <option value="mistral:7b-instruct">Mistral 7B Instruct</option>
-          <option value="llama3.2:3b">Llama 3.2 3B Instruct</option>
+          {availableModels.length === 0 ? (
+            <option value="">Chargement...</option>
+          ) : (
+            availableModels.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))
+          )}
         </select>
       </div>
       <button

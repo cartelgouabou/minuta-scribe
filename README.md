@@ -10,7 +10,7 @@ Minuta est un outil qui :
 - **Génère** un compte rendu professionnel grâce à l'intelligence artificielle
 - **Exporte** le résultat en PDF ou texte
 
-Tout fonctionne **localement** sur votre ordinateur, y compris la génération du compte rendu via Ollama avec des modèles LLM locaux.
+Par défaut, tout fonctionne **localement** sur votre ordinateur, y compris la génération du compte rendu via Ollama avec des modèles LLM locaux. Pour les transcriptions complexes, vous pouvez également utiliser des services cloud (Groq ou Vercel AI Gateway) pour accéder à des modèles plus performants.
 
 
 ## 📦 Version 2.0 - Janvier 2026
@@ -26,10 +26,13 @@ Tout fonctionne **localement** sur votre ordinateur, y compris la génération d
    - Indicateur visuel lorsque le compte rendu a été modifié
    - Les modifications sont automatiquement incluses dans les exports PDF et TXT
 
-2. **🤖 Choix entre deux modèles LLM**
-   - Sélection entre **Mistral 7B Instruct** et **Llama 3.2 3B Instruct**
-   - Téléchargement automatique des deux modèles au démarrage
-   - Comparaison facile des résultats entre les modèles
+2. **🤖 Support de plusieurs providers LLM**
+   - **Ollama (par défaut)** : Modèle local **Llama 3.2 3B Instruct** (gratuit, fonctionne hors ligne)
+   - **Groq (recommandé)** : API cloud rapide et performante avec accès à des modèles optimisés (openai/gpt-oss-20b, llama-3.3-70b-versatile, qwen/qwen3-32b)
+   - **Vercel AI Gateway** : API cloud avec accès à plusieurs providers (openai/gpt-oss-20b, alibaba/qwen-3-30b, google/gemini-2.0-flash-lite, meta/llama-4-scout)
+   - Configuration interactive lors de l'installation via `start.sh`
+   - Tous les modèles prédéfinis sont automatiquement configurés selon le provider choisi
+   - 💡 **Recommandation** : Pour les transcriptions complexes, nous recommandons fortement d'utiliser **Groq** pour des résultats plus rapides et plus fidèles
 
 3. **🚀 Script d'installation amélioré (`start.sh`)**
    - Support multi-plateforme complet (macOS, Linux, Windows)
@@ -79,9 +82,11 @@ Minuta utilise **Docker Desktop** (ou Docker Engine sur Linux) pour gérer ces c
 - 🎤 Enregistrement audio depuis votre navigateur
 - 📝 Transcription automatique en temps réel (français ou anglais)
   - ⚡ **Transcriptions partielles** : Affichage progressif pendant l'enregistrement (nouveau en v2.1)
+  - ⏳ **Indicateur de transcription** : Spinner visible pendant toute la durée de la transcription, même après l'arrêt de l'enregistrement (nouveau en v2.2)
 - 📋 **Collage de transcription externe** : Collez une transcription depuis une autre application (nouveau en v2.1)
 - ✏️ Édition de la transcription avant génération
-- 🤖 Génération de compte rendu via IA avec choix du modèle (Mistral 7B ou Llama 3.2 3B)
+- 🤖 Génération de compte rendu via IA avec choix du modèle selon le provider configuré (Ollama, Groq ou Vercel)
+  - 💡 **Groq recommandé** : Pour les transcriptions complexes, Groq offre les meilleures performances (nouveau en v2.2)
 - ✏️ **Édition du compte rendu généré** avant export (nouveau en v2.0)
 - 💾 Export en PDF ou texte du compte rendu édité
 - 📊 Statistiques en temps réel (durée, nombre de mots)
@@ -177,11 +182,13 @@ Minuta utilise **Docker Desktop** (ou Docker Engine sur Linux) pour gérer ces c
    Le script `start.sh` va automatiquement :
    - ✅ Vérifier si Docker est installé (et vous proposer de l'installer si nécessaire)
    - ✅ Vérifier que Docker fonctionne correctement
+   - ✅ Vous demander quel service LLM utiliser (Ollama, Groq ou Vercel)
+   - ✅ Si vous choisissez Groq ou Vercel : vous demander votre API key et vous permettre de sélectionner les modèles
    - ✅ Construire et lancer tous les conteneurs Docker
-   - ✅ Télécharger les modèles LLM (Mistral 7B et Llama 3.2 3B)
+   - ✅ Télécharger le modèle LLM local (Llama 3.2 3B) si Ollama est choisi
    - ✅ Préparer l'application pour l'utilisation
    
-   > **Note :** Aucune configuration manuelle n'est nécessaire ! Le premier lancement peut prendre plusieurs minutes pour télécharger les modèles LLM (~6.4GB au total). Les lancements suivants seront beaucoup plus rapides.
+   > **Note :** Aucune configuration manuelle n'est nécessaire ! Le script vous guide à travers toute la configuration. Le premier lancement avec Ollama peut prendre quelques minutes pour télécharger le modèle LLM (~2.0GB). Les lancements suivants seront beaucoup plus rapides.
    
    > **Note Docker :** Si Docker n'est pas installé, le script vous proposera de l'installer automatiquement. Sur macOS, vous devrez entrer votre mot de passe administrateur lors de l'installation. Voir la section [Prérequis](#-installation-rapide) ci-dessus pour plus de détails.
    
@@ -258,12 +265,13 @@ Le script `uninstall.sh` va automatiquement :
 
 *Capture d'écran du terminal montrant :*
 - ✅ Conteneurs Docker démarrés avec succès (minuta-ollama, minuta-backend, minuta-frontend)
-- ✅ Téléchargement des modèles LLM (Mistral 7B Instruct et Llama 3.2 3B Instruct)
+- ✅ Configuration du service LLM (Ollama, Groq ou Vercel)
+- ✅ Téléchargement du modèle LLM local (Llama 3.2 3B Instruct) si Ollama est choisi
 - ℹ️ URL d'accès à l'application : `http://localhost`
-- ℹ️ Liste des modèles LLM disponibles
+- ℹ️ Liste des modèles LLM disponibles selon le provider configuré
 - ℹ️ Commandes utiles pour voir les logs et arrêter l'application
 
-> **💡 Note :** Cette capture montre l'état du terminal une fois que tous les conteneurs sont démarrés et que les modèles LLM sont téléchargés. Le processus peut prendre plusieurs minutes lors du premier lancement, surtout pour télécharger les modèles (~6.4GB au total).
+> **💡 Note :** Cette capture montre l'état du terminal une fois que tous les conteneurs sont démarrés. Le processus peut prendre quelques minutes lors du premier lancement avec Ollama pour télécharger le modèle (~2.0GB). Avec Groq ou Vercel, aucun téléchargement n'est nécessaire.
 
 ## 📖 Comment utiliser Minuta
 
@@ -289,7 +297,7 @@ Le script `uninstall.sh` va automatiquement :
 ### 3. Générer le compte rendu
 
 1. Sélectionnez un prompt (modèle de compte rendu)
-2. Choisissez le modèle LLM (Mistral 7B ou Llama 3.2 3B)
+2. Choisissez le modèle LLM selon le provider configuré (les modèles disponibles s'affichent automatiquement)
 3. Cliquez sur **"Générer le compte rendu"**
 4. Attendez quelques secondes (la première génération peut prendre plus de temps)
 5. Le compte rendu apparaît en dessous
@@ -348,15 +356,55 @@ Pour toute question ou problème, consultez le [README technique](README_TECH.md
 
 ## 📝 Notes importantes
 
-- **Confidentialité** : Tout fonctionne localement sur votre ordinateur. Aucune donnée n'est envoyée vers des services cloud. La transcription utilise Whisper local et la génération de compte rendu utilise Ollama avec des modèles LLM locaux (Mistral 7B et Llama 3.2 3B).
+### Confidentialité et services LLM
+
+- **Mode local (Ollama par défaut)** : Tout fonctionne localement sur votre ordinateur. Aucune donnée n'est envoyée vers des services cloud. La transcription utilise Whisper local et la génération de compte rendu utilise Ollama avec le modèle LLM local **Llama 3.2 3B Instruct**.
+- **Mode cloud (Groq/Vercel)** : Si vous choisissez Groq ou Vercel AI Gateway, vos transcriptions sont envoyées aux services cloud pour générer le compte rendu. Vérifiez les politiques de confidentialité de ces services avant utilisation.
+
+### Modèles LLM et limitations
+
+- **Ollama (par défaut)** : 
+  - Modèle disponible : **Llama 3.2 3B Instruct** (2.0GB)
+  - ⚠️ **Limitation importante** : Ollama utilise des modèles locaux limités en taille. Pour les transcriptions complexes ou longues, le compte rendu généré peut ne pas être optimal ou fidèle à la transcription originale.
+  - 💡 **Recommandation** : Pour les transcriptions complexes, il est fortement recommandé d'utiliser Groq ou Vercel AI Gateway qui offrent accès à des modèles plus performants et adaptés à cette tâche.
+  
+- **Groq (recommandé)** : 
+  - Modèles disponibles : openai/gpt-oss-20b, llama-3.3-70b-versatile, qwen/qwen3-32b
+  - Rapide et performant, idéal pour les transcriptions complexes
+  - Configuration via `start.sh` lors de l'installation
+  - 💡 **Recommandation** : Groq est le service recommandé pour obtenir les meilleurs résultats de compte rendu, notamment pour les transcriptions longues ou complexes
+  
+- **Vercel AI Gateway** : 
+  - Modèles disponibles : openai/gpt-oss-20b, alibaba/qwen-3-30b, google/gemini-2.0-flash-lite, meta/llama-4-scout
+  - Accès à plusieurs providers (OpenAI, Google, Alibaba, Meta, etc.)
+  - Configuration via `start.sh` lors de l'installation
+  - Alternative à Groq si vous préférez utiliser Vercel AI Gateway
+
+### Configuration des API keys
+
+Lors de l'installation avec `start.sh`, si vous choisissez Groq ou Vercel :
+1. Le script vous demandera votre API key (ou réutilisera celle existante si déjà configurée)
+2. Tous les modèles prédéfinis seront automatiquement configurés (plus besoin de sélection manuelle)
+3. La configuration sera automatiquement enregistrée dans `backend/.env`
+4. Le fichier `.env` est exclu de Git pour protéger vos clés API
+
+**💡 Recommandation :** Nous recommandons fortement d'utiliser **Groq** pour les transcriptions complexes. Groq offre une excellente combinaison de rapidité, de performance et de coût pour la génération de comptes rendus.
+
+Pour changer de provider ou modifier la configuration :
+- Relancez `./start.sh` et choisissez un nouveau provider
+- Le script détectera automatiquement votre configuration existante et vous proposera de la réutiliser
+- Ou modifiez manuellement le fichier `backend/.env`
+
+### Autres notes
+
 - **Navigateurs recommandés** : Chrome ou Edge pour la meilleure expérience
-- **Modèles LLM disponibles** : Vous pouvez choisir entre Mistral 7B Instruct et Llama 3.2 3B Instruct dans l'interface lors de la génération du compte rendu. Les deux modèles sont automatiquement téléchargés au démarrage via le script `start.sh`.
 - **Performance** : 
-  - ⏱️ **Premier lancement** : Lors du premier lancement, le téléchargement des modèles LLM peut prendre plusieurs minutes (~6.4GB au total : Mistral 4.4GB + Llama 2.0GB). La première transcription peut aussi prendre 30 secondes à quelques minutes car le modèle Whisper doit être chargé en mémoire. C'est normal, soyez patient !
+  - ⏱️ **Premier lancement (Ollama)** : Le téléchargement du modèle LLM peut prendre quelques minutes (~2.0GB). La première transcription peut aussi prendre 30 secondes à quelques minutes car le modèle Whisper doit être chargé en mémoire. C'est normal, soyez patient !
   - ⚡ **Lancements suivants** : Une fois les modèles chargés, les transcriptions et générations de compte rendu sont beaucoup plus rapides.
+  - 🚀 **Avec Groq/Vercel** : Pas de téléchargement nécessaire, génération généralement plus rapide
 - **Prérequis système** : 
-  - RAM : Au moins 8GB recommandés (16GB pour de meilleures performances)
-  - Espace disque : ~10-15GB pour les modèles LLM et les images Docker
+  - RAM : Au moins 8GB recommandés (16GB pour de meilleures performances avec Ollama)
+  - Espace disque : ~5-10GB pour Ollama (modèle local), moins avec Groq/Vercel
 - **Stockage** : Les transcriptions ne sont pas sauvegardées automatiquement. Exportez-les si vous voulez les conserver.
 
 ## 🎉 C'est tout !
@@ -367,6 +415,27 @@ Vous êtes prêt à utiliser Minuta. Bonne transcription !
 ---
 
 ## 📚 Historique des versions
+
+### Version 2.2 - 31 janvier 2026
+
+**Nouvelles fonctionnalités :**
+- 🚀 **Support Groq et Vercel AI Gateway** : Configuration interactive lors de l'installation pour utiliser des services cloud performants
+- 🎯 **Recommandation Groq** : Groq est recommandé pour les transcriptions complexes grâce à sa rapidité et ses modèles performants
+- 🔄 **Configuration automatique des modèles** : Tous les modèles prédéfinis sont automatiquement configurés (plus besoin de sélection manuelle)
+- ⏳ **Indicateur de transcription amélioré** : Spinner visible pendant toute la durée de la transcription, même après l'arrêt de l'enregistrement
+- 🔑 **Gestion intelligente des API keys** : Détection et réutilisation automatique des clés API existantes
+- 🛡️ **Nettoyage automatique des clés API** : Suppression automatique des caractères indésirables lors de la saisie
+
+**Améliorations :**
+- Modèle par défaut changé de Mistral 7B à Llama 3.2 3B Instruct uniquement (plus léger)
+- Modèles Groq optimisés : openai/gpt-oss-20b, llama-3.3-70b-versatile, qwen/qwen3-32b
+- Modèles Vercel optimisés : openai/gpt-oss-20b, alibaba/qwen-3-30b, google/gemini-2.0-flash-lite, meta/llama-4-scout
+- Gestion d'erreurs améliorée avec messages explicites pour les problèmes d'API
+- Healthcheck Docker augmenté à 3 minutes pour laisser le temps au modèle Whisper de se charger
+
+**Corrections :**
+- Correction de la syntaxe des fichiers .env pour éviter les erreurs de configuration
+- Amélioration de la détection du provider LLM au démarrage
 
 ### Version 2.1.2 - 28 janvier 2026
 

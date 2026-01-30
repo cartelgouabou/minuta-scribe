@@ -10,6 +10,7 @@ import './Meeting.css'
 function Meeting() {
   const [transcription, setTranscription] = useState<string>('')
   const [isRecording, setIsRecording] = useState<boolean>(false)
+  const [isTranscribing, setIsTranscribing] = useState<boolean>(false)
   const [language, setLanguage] = useState<string>('fr')
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null)
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null)
@@ -27,6 +28,7 @@ function Meeting() {
           onRecordingStart={() => setRecordingStartTime(Date.now())}
           onRecordingStop={() => setRecordingStartTime(null)}
           onStreamReady={setAudioStream}
+          onTranscribingChange={setIsTranscribing}
         />
       </div>
       {isRecording && recordingStartTime && (
@@ -37,6 +39,7 @@ function Meeting() {
         transcription={transcription}
         setTranscription={setTranscription}
         isRecording={isRecording}
+        isTranscribing={isTranscribing}
       />
       {transcription && transcription.trim() && (
         <SummaryGenerator transcription={transcription} />

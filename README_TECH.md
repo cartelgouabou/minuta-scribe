@@ -23,7 +23,7 @@
 
 ### Caractéristiques principales
 
-- **Offline-first** : Tout fonctionne localement. La transcription utilise Whisper local et la génération de compte rendu utilise Ollama avec des modèles LLM locaux (Mistral 7B et Llama 3.2 3B). Choix du modèle disponible dans l'interface (v2.0)
+- **Offline-first** : Tout fonctionne localement par défaut. La transcription utilise Whisper local et la génération de compte rendu utilise Ollama avec le modèle LLM local (Llama 3.2 3B). Support optionnel de services cloud (Groq recommandé, Vercel AI Gateway) pour des modèles plus performants (v2.2)
 - **Temps réel** : Transcription partielle toutes les 3 secondes pendant l'enregistrement (v2.1)
 - **Collage externe** : Possibilité de coller une transcription depuis une autre application (v2.1)
 - **Multi-langues** : Support français et anglais
@@ -31,6 +31,58 @@
 - **Thème adaptatif** : Support dark/light mode avec toggle manuel
 - **Édition du compte rendu** : Possibilité d'éditer le compte rendu généré avant export (v2.0)
 
+
+## 📦 Version 2.2 - 31 janvier 2026
+
+### 🎉 Nouvelles fonctionnalités et améliorations
+
+**Version 2.2** apporte le support des services cloud LLM et des améliorations significatives de l'expérience utilisateur.
+
+#### ✨ Fonctionnalités ajoutées
+
+1. **Support Groq et Vercel AI Gateway**
+   - Service LLM unifié (`llm_service.py`) qui détecte automatiquement le provider via variables d'environnement
+   - Support de l'API Groq avec modèles optimisés : openai/gpt-oss-20b, llama-3.3-70b-versatile, qwen/qwen3-32b
+   - Support de Vercel AI Gateway avec modèles : openai/gpt-oss-20b, alibaba/qwen-3-30b, google/gemini-2.0-flash-lite, meta/llama-4-scout
+   - Endpoint API `/api/models` pour récupérer dynamiquement les modèles disponibles selon le provider
+   - Gestion d'erreurs améliorée avec messages explicites pour les problèmes d'API
+
+2. **Configuration interactive améliorée**
+   - Script `start.sh` avec configuration interactive des providers LLM
+   - Détection et réutilisation automatique des clés API existantes
+   - Nettoyage automatique des clés API (suppression des caractères indésirables)
+   - Configuration automatique de tous les modèles prédéfinis (plus besoin de sélection manuelle)
+
+3. **Indicateur de transcription amélioré**
+   - Spinner visible pendant toute la durée de la transcription
+   - État `isTranscribing` pour suivre la transcription même après l'arrêt de l'enregistrement
+   - Indicateur visuel à côté du titre et message sous le textarea pendant le traitement
+
+#### 🔧 Améliorations techniques
+
+- Modèle par défaut changé de Mistral 7B à Llama 3.2 3B Instruct uniquement (plus léger, ~2GB au lieu de ~6.4GB)
+- Service LLM unifié avec détection automatique du provider
+- Healthcheck Docker augmenté à 3 minutes pour laisser le temps au modèle Whisper de se charger
+- Gestion améliorée des variables d'environnement avec support des fichiers `.env`
+
+#### 📝 Changements dans le code
+
+**Backend** :
+- `llm_service.py` (nouveau) : Service unifié pour Ollama, Groq et Vercel
+- `summary.py` : Utilise `LLMService`, endpoint `/api/models` ajouté
+- `docker-compose.yml` : Support des variables Groq/Vercel via `env_file`
+
+**Frontend** :
+- `SummaryGenerator.tsx` : Récupération dynamique des modèles via API
+- `TranscriptionView.tsx` : Indicateur de transcription amélioré avec spinner
+- `AudioRecorder.tsx` : Gestion de l'état `isTranscribing`
+- `api.ts` : Fonction `getModels()` ajoutée
+- `types/index.ts` : Type `ModelsResponse` ajouté
+
+**Scripts** :
+- `start.sh` : Configuration interactive des providers, gestion des clés API, nettoyage automatique
+
+---
 
 ## 📦 Version 2.1 - 26 janvier 2026
 
@@ -99,8 +151,10 @@
    - Les exports PDF et TXT utilisent automatiquement le texte édité
    - Gestion d'état séparée : `summary` (original) et `editedSummary` (modifiable)
 
-2. **Choix entre modèles LLM**
-   - Support de deux modèles : Mistral 7B Instruct et Llama 3.2 3B Instruct
+2. **Support de plusieurs providers LLM**
+   - Ollama (par défaut) : Llama 3.2 3B Instruct
+   - Groq (recommandé) : openai/gpt-oss-20b, llama-3.3-70b-versatile, qwen/qwen3-32b
+   - Vercel AI Gateway : openai/gpt-oss-20b, alibaba/qwen-3-30b, google/gemini-2.0-flash-lite, meta/llama-4-scout
    - Sélection du modèle via dropdown dans l'interface
    - Téléchargement automatique des deux modèles au démarrage via `start.sh`
    - Validation côté backend des modèles disponibles
@@ -110,7 +164,8 @@
      - Détection automatique du système d'exploitation (macOS, Linux, Windows)
      - Installation automatique de Docker (macOS, Ubuntu/Debian)
      - Installation automatique de Git Bash sur Windows si nécessaire
-     - Téléchargement automatique des modèles LLM (Mistral 7B et Llama 3.2 3B)
+     - Téléchargement automatique du modèle LLM (Llama 3.2 3B) si Ollama est choisi
+     - Configuration automatique des modèles si Groq ou Vercel est choisi
      - Messages d'aide spécifiques par plateforme
      - Vérification de santé des services Docker
    
@@ -152,8 +207,8 @@
 - `index.css` : Ajout des variables CSS d'accent
 
 **Backend** :
-- `routes/summary.py` : Validation des modèles LLM disponibles
-- `services/ollama_service.py` : Support de deux modèles (Mistral et Llama)
+- `routes/summary.py` : Validation des modèles LLM disponibles, endpoint `/api/models`
+- `services/llm_service.py` : Service unifié pour Ollama, Groq et Vercel
 
 **Infrastructure** :
 - `docker/nginx.conf` : Configuration WebSocket améliorée
@@ -207,8 +262,8 @@
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │              Ollama Server                            │  │
 │  │  ┌──────────────┐  ┌──────────────┐                   │  │
-│  │  │   Mistral    │  │    Llama     │                   │  │
-│  │  │   7B Inst    │  │  3.2 3B Inst │                   │  │
+│  │  │    Llama     │                   │  │
+│  │  │  3.2 3B Inst │                   │  │
 │  │  └──────────────┘  └──────────────┘                   │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
@@ -545,7 +600,7 @@ Response: {
 ```
 
 **Modèles disponibles :**
-- `mistral:7b-instruct` : Mistral 7B Instruct (par défaut, 4.4 GB)
+- `llama3.2:3b` : Llama 3.2 3B Instruct (par défaut, 2.0 GB)
 - `llama3.2:3b` : Llama 3.2 3B Instruct (2.0 GB)
 
 ---
@@ -640,13 +695,34 @@ cd ../frontend && npm run lint -- --fix
 
 **Backend (.env) :**
 ```env
+# Configuration Ollama (par défaut, utilisé si aucune clé API cloud n'est configurée)
 # URL de Ollama (optionnel, valeur par défaut dans Docker: http://ollama:11434)
+OLLAMA_BASE_URL=http://ollama:11434
+
+# Configuration Groq (optionnel, pour utiliser Groq au lieu d'Ollama)
+GROQ_API_KEY=votre_cle_api_groq
+LLM_MODELS=openai/gpt-oss-20b,llama-3.3-70b-versatile,qwen/qwen3-32b
+
+# Configuration Vercel AI Gateway (optionnel, pour utiliser Vercel au lieu d'Ollama)
+# AI_GATEWAY_API_KEY=votre_cle_api_vercel
+# LLM_MODELS=openai/gpt-oss-20b,alibaba/qwen-3-30b,google/gemini-2.0-flash-lite,meta/llama-4-scout
 # OLLAMA_BASE_URL=http://ollama:11434
 DATABASE_URL=sqlite:///./minuta.db
 ```
 
 **Docker :**
-Les variables d'environnement sont configurées automatiquement dans `docker-compose.yml`. Aucune configuration manuelle requise.
+Les variables d'environnement sont configurées automatiquement dans `docker-compose.yml`. 
+
+**Configuration via `start.sh` (recommandé) :**
+- Le script `start.sh` vous guide pour configurer Groq ou Vercel si vous le souhaitez
+- Les clés API et modèles sont automatiquement enregistrés dans `backend/.env`
+- Le fichier `.env` est exclu de Git pour protéger vos clés API
+
+**Configuration manuelle :**
+- Créez `backend/.env` avec les variables appropriées selon le provider choisi
+- Pour Groq : `GROQ_API_KEY=...` et `LLM_MODELS=...`
+- Pour Vercel : `AI_GATEWAY_API_KEY=...` et `LLM_MODELS=...`
+- Si aucune clé API n'est configurée, Ollama sera utilisé par défaut
 
 ### Configuration Whisper
 
@@ -662,10 +738,12 @@ Options disponibles dans `backend/app/services/whisper_service.py` :
 ### Configuration Ollama
 
 Modèles disponibles :
-- `mistral:7b-instruct` : Mistral 7B Instruct (par défaut, 4.4 GB)
+- `llama3.2:3b` : Llama 3.2 3B Instruct (par défaut, 2.0 GB)
 - `llama3.2:3b` : Llama 3.2 3B Instruct (2.0 GB)
 
-Les modèles sont automatiquement téléchargés au démarrage via le script `start.sh`. Si les modèles ne sont pas disponibles, ils seront téléchargés au premier usage. Pour télécharger manuellement, on peut exécuter `docker exec minuta-ollama ollama pull mistral:7b-instruct` et `docker exec minuta-ollama ollama pull llama3.2:3b`.
+Le modèle Llama 3.2 3B est automatiquement téléchargé au démarrage via le script `start.sh` si Ollama est choisi. Si le modèle n'est pas disponible, il sera téléchargé au premier usage. Pour télécharger manuellement, on peut exécuter `docker exec minuta-ollama ollama pull llama3.2:3b`.
+
+**Note :** Si vous utilisez Groq ou Vercel, aucun téléchargement de modèle local n'est nécessaire.
 
 Configuration modifiable dans `backend/app/services/ollama_service.py`
 
@@ -727,7 +805,7 @@ cd docker
 docker-compose up --build
 ```
 
-> **Note :** Aucune configuration manuelle requise ! Les modèles LLM sont automatiquement téléchargés au démarrage via le script `start.sh`. Le premier téléchargement peut prendre plusieurs minutes (~6.4GB au total).
+> **Note :** Aucune configuration manuelle requise ! Le modèle LLM (Llama 3.2 3B) est automatiquement téléchargé au démarrage via le script `start.sh` si Ollama est choisi. Le premier téléchargement peut prendre quelques minutes (~2.0GB). Avec Groq ou Vercel, aucun téléchargement n'est nécessaire.
 
 **Production :**
 ```bash
@@ -779,7 +857,8 @@ docker-compose -f docker-compose.prod.yml up -d
 5. **Taille Docker** : 
    - Image backend ~2-3GB (Whisper)
    - Image Ollama ~2GB (base, modèles téléchargés séparément)
-   - Modèles LLM : ~6.4GB (Mistral 4.4GB + Llama 3.2 3B 2.0GB, téléchargés automatiquement au démarrage)
+   - Modèles LLM (Ollama) : ~2.0GB (Llama 3.2 3B, téléchargé automatiquement au démarrage)
+   - Avec Groq ou Vercel : Aucun téléchargement de modèle local nécessaire
    - Total initial : ~4-5GB, puis ~10-15GB après téléchargement des modèles
 
 ### Améliorations prévues

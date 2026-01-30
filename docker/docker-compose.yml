@@ -6,9 +6,15 @@ services:
     container_name: minuta-backend
     ports:
       - "8000:8000"
+    env_file:
+      - ../backend/.env  # Charger les variables d'environnement depuis backend/.env si présent
     environment:
       - DATABASE_URL=sqlite:///./data/minuta.db
       - OLLAMA_BASE_URL=http://ollama:11434
+      # Variables optionnelles pour Groq et Vercel (peuvent être définies dans backend/.env)
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - AI_GATEWAY_API_KEY=${AI_GATEWAY_API_KEY:-}
+      - LLM_MODELS=${LLM_MODELS:-}
     volumes:
       - backend_data:/app/backend/data
       # Volume pour développement (commenter en production)
@@ -24,7 +30,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 180s  # 3 minutes pour laisser le temps au modèle Whisper de se charger
 
   frontend:
     build:

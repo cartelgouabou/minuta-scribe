@@ -1,4 +1,4 @@
-import { Prompt, GenerateSummaryRequest, GenerateSummaryResponse } from '../types'
+import { Prompt, GenerateSummaryRequest, GenerateSummaryResponse, ModelsResponse } from '../types'
 
 // Utiliser une URL relative pour fonctionner avec le proxy Nginx en Docker
 // En développement local, Vite proxy redirige /api vers localhost:8000
@@ -67,6 +67,14 @@ export async function deletePrompt(id: number): Promise<void> {
   if (!response.ok) {
     throw new Error('Failed to delete prompt')
   }
+}
+
+export async function getModels(): Promise<ModelsResponse> {
+  const response = await fetch(`${API_BASE_URL}/models`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch models')
+  }
+  return response.json()
 }
 
 export async function generateSummary(

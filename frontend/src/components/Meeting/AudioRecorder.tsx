@@ -8,6 +8,7 @@ interface AudioRecorderProps {
   onRecordingStart: () => void
   onRecordingStop: () => void
   onStreamReady?: (stream: MediaStream | null) => void
+  onTranscribingChange?: (isTranscribing: boolean) => void
 }
 
 function AudioRecorder({
@@ -18,6 +19,7 @@ function AudioRecorder({
   onRecordingStart,
   onRecordingStop,
   onStreamReady,
+  onTranscribingChange,
 }: AudioRecorderProps) {
   const [error, setError] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -151,6 +153,10 @@ function AudioRecorder({
             onTranscriptionUpdate(data.text)
             accumulatedTranscriptionRef.current = data.text
             onRecordingStop()
+            // Indiquer que la transcription est terminée
+            if (onTranscribingChange) {
+              onTranscribingChange(false)
+            }
             // Fermer le WebSocket après avoir reçu la transcription finale
             if (ws.readyState === WebSocket.OPEN) {
               ws.close()
@@ -161,6 +167,10 @@ function AudioRecorder({
             // Arrêter l'enregistrement et fermer le stream
             setIsRecording(false)
             onRecordingStop()
+            // Indiquer que la transcription est terminée (avec erreur)
+            if (onTranscribingChange) {
+              onTranscribingChange(false)
+            }
             if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
               mediaRecorderRef.current.stop()
             }
@@ -209,6 +219,10 @@ function AudioRecorder({
       mediaRecorder.onstop = () => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'stop' }))
+          // Indiquer que la transcription est en cours
+          if (onTranscribingChange) {
+            onTranscribingChange(true)
+          }
           // Ne pas fermer le WebSocket ici, attendre la transcription finale
           // Le WebSocket sera fermé automatiquement quand on reçoit le message final
         }

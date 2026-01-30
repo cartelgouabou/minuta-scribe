@@ -16,6 +16,12 @@ export interface GenerateSummaryResponse {
   summary: string
 }
 
+export interface ModelsResponse {
+  provider: string
+  models: string[]
+  default_model: string
+}
+
 export interface TranscriptionMessage {
   type: 'partial' | 'final'
   text: string
