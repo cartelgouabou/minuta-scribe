@@ -32,7 +32,7 @@ Par défaut, tout fonctionne **localement** sur votre ordinateur, y compris la g
    - **Vercel AI Gateway** : API cloud avec accès à plusieurs providers (openai/gpt-oss-20b, alibaba/qwen-3-30b, google/gemini-2.0-flash-lite, meta/llama-4-scout)
    - Configuration interactive lors de l'installation via `start.sh`
    - Tous les modèles prédéfinis sont automatiquement configurés selon le provider choisi
-   - 💡 **Recommandation** : Pour les transcriptions complexes, nous recommandons fortement d'utiliser **Groq** pour des résultats plus rapides et plus fidèles
+   - 💡 **Recommandation** : Nous recommandons d'utiliser **Groq** pour tout utilisateur novice, la création de compte, la création de la clé d'api et le monitoring est rapide et facile.
 
 3. **🚀 Script d'installation amélioré (`start.sh`)**
    - Support multi-plateforme complet (macOS, Linux, Windows)

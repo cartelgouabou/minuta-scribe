@@ -312,17 +312,55 @@ echo ""
 # Configuration du service LLM
 info "Configuration du service LLM..."
 echo ""
+
+# Détecter le provider actuellement configuré
+ENV_FILE="backend/.env"
+CURRENT_PROVIDER="ollama"
+DEFAULT_CHOICE=1
+
+if [ -f "$ENV_FILE" ]; then
+    if grep -q "^GROQ_API_KEY=" "$ENV_FILE"; then
+        CURRENT_PROVIDER="groq"
+        DEFAULT_CHOICE=2
+    elif grep -q "^AI_GATEWAY_API_KEY=" "$ENV_FILE"; then
+        CURRENT_PROVIDER="vercel"
+        DEFAULT_CHOICE=3
+    fi
+fi
+
+# Afficher le provider actuel
+if [ "$CURRENT_PROVIDER" != "ollama" ]; then
+    # Mettre en majuscule la première lettre (compatible avec toutes les versions de bash)
+    if [ "$CURRENT_PROVIDER" == "groq" ]; then
+        CURRENT_PROVIDER_DISPLAY="Groq"
+    elif [ "$CURRENT_PROVIDER" == "vercel" ]; then
+        CURRENT_PROVIDER_DISPLAY="Vercel AI Gateway"
+    else
+        CURRENT_PROVIDER_DISPLAY="$CURRENT_PROVIDER"
+    fi
+    info "Provider actuellement configuré : $CURRENT_PROVIDER_DISPLAY"
+    echo ""
+fi
+
 echo "Quel service LLM voulez-vous utiliser ?"
 echo "   1) Ollama (par défaut, local, gratuit)"
-echo "   2) Groq (API cloud, rapide et performant)"
+echo "   2) Groq (API cloud, rapide et performant) - Recommandé"
 echo "   3) Vercel AI Gateway (API cloud, accès à plusieurs providers)"
 echo ""
-read -p "Votre choix (1/2/3) [1]: " -r LLM_CHOICE
+
+# Proposer le choix actuel par défaut
+if [ "$CURRENT_PROVIDER" == "groq" ]; then
+    read -p "Votre choix (1/2/3) [2]: " -r LLM_CHOICE
+elif [ "$CURRENT_PROVIDER" == "vercel" ]; then
+    read -p "Votre choix (1/2/3) [3]: " -r LLM_CHOICE
+else
+    read -p "Votre choix (1/2/3) [1]: " -r LLM_CHOICE
+fi
 echo ""
 
-# Par défaut, utiliser Ollama
+# Utiliser le choix par défaut si vide
 if [ -z "$LLM_CHOICE" ]; then
-    LLM_CHOICE=1
+    LLM_CHOICE=$DEFAULT_CHOICE
 fi
 
 LLM_PROVIDER=""
@@ -519,7 +557,21 @@ case $LLM_CHOICE in
     *)
         LLM_PROVIDER="ollama"
         info "Utilisation d'Ollama (par défaut, local)"
-        # Ne pas créer de .env pour Ollama, utiliser les valeurs par défaut
+        # Si un .env existe avec des clés API, les supprimer pour forcer l'utilisation d'Ollama
+        if [ -f "$ENV_FILE" ]; then
+            # Créer un backup du .env actuel
+            if grep -q "^GROQ_API_KEY=" "$ENV_FILE" || grep -q "^AI_GATEWAY_API_KEY=" "$ENV_FILE"; then
+                info "Suppression des clés API existantes pour utiliser Ollama..."
+                # Créer un nouveau .env sans les clés API cloud
+                grep -v "^GROQ_API_KEY=" "$ENV_FILE" | grep -v "^AI_GATEWAY_API_KEY=" | grep -v "^LLM_MODELS=" > "${ENV_FILE}.tmp" 2>/dev/null || true
+                # Si le fichier n'est pas vide ou s'il ne contenait que des clés API, créer un fichier vide
+                if [ ! -s "${ENV_FILE}.tmp" ] || ! grep -q "^#" "${ENV_FILE}.tmp" 2>/dev/null; then
+                    echo "# Configuration Ollama (par défaut)" > "${ENV_FILE}.tmp"
+                fi
+                mv "${ENV_FILE}.tmp" "$ENV_FILE"
+                success "Configuration Ollama activée. Les clés API cloud ont été supprimées."
+            fi
+        fi
         ;;
 esac
 
